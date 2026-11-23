@@ -242,3 +242,4 @@ u.term{text-decoration:none;border-bottom:2px dotted var(--pri);font-weight:700}
 .wkt.mine{background:var(--mint);color:#fff;opacity:.85}
 .wkt:disabled:not(.mine){opacity:.35}
 .wksave{position:sticky;bottom:8px;box-shadow:0 8px 24px rgba(79,91,255,.35);z-index:2}
+.brandbtn{display:inline-flex;align-items:center;gap:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}.brandbtn:active{opacity:.6}

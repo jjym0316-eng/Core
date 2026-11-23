@@ -67,7 +67,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.closest('.a
 // ================= 테마 =================
 function applyTheme(){let t=ls.get('core_theme');if(!t)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';S.theme=t;document.documentElement.dataset.theme=t;const m=$('meta[name=theme-color]');if(m)m.content=t==='dark'?'#0B0D1A':'#F4F6FC'}
 // ---- 새로고침 · 당겨서 새로고침 · 새 버전 알림 ----
-function hardReload(){try{$('#app').style.opacity='.4'}catch(e){}const u=location.pathname+'?r='+Date.now();location.replace(u)}
+function hardReload(){saveNav();try{sessionStorage.setItem('core_y',String(window.scrollY||0))}catch(e){}try{$('#app').style.opacity='.4'}catch(e){}const u=location.pathname+'?r='+Date.now();location.replace(u)}
 A.reload=()=>hardReload();
 async function checkUpdate(){try{const r=await fetch('index.html?u='+Date.now(),{cache:'no-store'});if(!r.ok)return;const t=await r.text();const m=t.match(/CORE_V='([^']+)'/);if(m&&window.CORE_V&&m[1]!==window.CORE_V&&!document.querySelector('.updbar')){const d=document.createElement('div');d.className='updbar';d.innerHTML='<span>✨ 새 버전이 있어요</span><button class="btn sm pri" data-a="reload">업데이트</button>';document.body.appendChild(d)}}catch(e){}}
 setInterval(()=>{if(document.visibilityState==='visible')checkUpdate()},180000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});setTimeout(checkUpdate,5000);
@@ -117,7 +117,7 @@ function mstate(m){if(m.role==='admin')return'admin';if(m.blocked)return'blocked
 const stChip=m=>({active:'<span class="chip g">이용중</span>',expired:'<span class="chip y">만료</span>',blocked:'<span class="chip r">차단</span>',admin:'<span class="chip p">관리자</span>'})[mstate(m)];
 function futureOf(mid){const now=new Date();return S.bookings.filter(b=>b.memberId===mid&&b.status==='booked'&&slotDT(b.date,b.time)>now).sort(byDT)}
 const reservable=m=>remaining(m)-futureOf(m.id).filter(b=>b.type==='lesson').length;
-function doLogout(msg){TOK='';ls.del('core_tok');S.user=null;S.role=null;S.since=0;for(const k in DB)delete DB[k];S._md={};S.selMember=null;S.f={};S.tab='home';S.sub={};S.modal=null;$('#modal').innerHTML='';if(msg)S.loginMsg=msg;render()}
+function doLogout(msg){TOK='';ls.del('core_tok');try{localStorage.removeItem('core_nav')}catch(e){}S.user=null;S.role=null;S.since=0;for(const k in DB)delete DB[k];S._md={};S.selMember=null;S.f={};S.tab='home';S.sub={};S.modal=null;$('#modal').innerHTML='';if(msg)S.loginMsg=msg;render()}
 A.logout=async()=>{if(!await ask('로그아웃할까요?','','로그아웃'))return;await api('POST','/api/logout').catch(()=>{});doLogout()};
 const setTok=r=>{TOK=r.token||'';ls.set('core_tok',TOK)};
 
@@ -137,7 +137,7 @@ function vLogin(){return `<div class="auth"><div style="position:absolute;top:ca
  <div class="err">${esc(S.err||S.loginMsg||'')}</div><button class="btn grad lg full" data-a="login" ${dis('login')}>${bz('login','로그인')}</button>
  <p class="xs muted" style="text-align:center">계정이 없으신가요? 트레이너에게 등록을 요청해주세요.</p></div></div>`}
 A.login=()=>busy('login',async()=>{S.err='';S.loginMsg='';try{setTok(await api('POST','/api/login',{id:S.f.lg_id,pw:S.f.lg_pw,code:S.f.lg_code}));S.f={};S.tab='home';await loadMe()}catch(e){S.err=e.message}});
-async function loadMe(){if(!TOK){S.user=null;render();return}try{const r=await api('GET','/api/me');S.user=r.user;S.role=r.role;S.ai=r.ai;S.since=0;await sync();loadAiLeft()}catch(e){S.user=null}render()}
+async function loadMe(){if(!TOK){S.user=null;render();return}try{const r=await api('GET','/api/me');S.user=r.user;S.role=r.role;S.ai=r.ai;S.since=0;await sync();loadAiLeft();restoreNav()}catch(e){S.user=null}render()}
 
 // ================= 레이아웃 =================
 function previewBar(){if(!S.viewAs)return '';const m=S.members[S.viewAs];return `<div class="pvbar"><span>👀 <b>${esc(m?.name||'회원')}</b>님이 보는 화면 (미리보기)</span><span class="row nw" style="gap:6px">${members().length>1?`<button class="btn sm" data-a="viewAsPick">회원 바꾸기</button>`:''}<button class="btn sm pri" data-a="viewAsExit">관리자로</button></span></div>`}
@@ -147,7 +147,7 @@ A.viewAsGo=({id})=>{closeModal();startView(id)};
 function startView(id){if(!S.viewAs)S.adminState={tab:S.tab,sub:{...S.sub},sel:S.selMember};S.viewAs=id;S.tab='home';S.sub={};S.selMember=null;S.bk={};S.wlDate=null;S.dietDate=null;window.scrollTo(0,0);render();toast(`${S.members[id]?.name||'회원'}님 화면으로 전환했어요`)}
 A.viewAsExit=()=>{const st=S.adminState||{};S.viewAs=null;S.tab=st.tab||'home';S.sub=st.sub||{};S.selMember=st.sel||null;S.bk={};S.wlDate=null;S.dietDate=null;window.scrollTo(0,0);render()};
 function shell(nav,body){const tabs=nav.map(([k,l,i])=>`<button class="${S.tab===k?'on':''}" data-a="go" data-t="${k}">${ic(i,22)}<span>${l}</span></button>`).join('');
- return `<header class="top ${S.viewAs?'pv':''}">${previewBar()}<div class="topin">${LOGO(34)}${WORD}${admin()?'<span class="role">관리자</span>':''}<span class="sp"></span>${admin()?`<button class="vabtn" data-a="viewAs">${ic('users',16)}<span>회원 화면</span></button>`:''}<button class="ib" data-a="reload" title="새로고침">${ic('refresh',18)}</button>${themeBtn()}<button class="ib" data-a="logout" title="로그아웃">${ic('out',18)}</button></div></header><main class="shell" id="view">${body}</main><nav class="bot">${tabs}</nav>`}
+ return `<header class="top ${S.viewAs?'pv':''}">${previewBar()}<div class="topin"><span class="brandbtn" data-a="goHome" title="홈으로">${LOGO(34)}${WORD}</span>${admin()?'<span class="role">관리자</span>':''}<span class="sp"></span>${admin()?`<button class="vabtn" data-a="viewAs">${ic('users',16)}<span>회원 화면</span></button>`:''}<button class="ib" data-a="reload" title="새로고침">${ic('refresh',18)}</button>${themeBtn()}<button class="ib" data-a="logout" title="로그아웃">${ic('out',18)}</button></div></header><main class="shell" id="view">${body}</main><nav class="bot">${tabs}</nav>`}
 A.go=d=>{S.tab=d.t;if(d.s)S.sub[d.t]=d.s;if(d.t!=='members'&&S.selMember&&!d.keep)S.selMember=null;window.scrollTo(0,0);render()};
 A.sub=d=>{S.sub[d.k]=d.v;render();renderModal()};
 const seg=(k,opts,def)=>{const cur=S.sub[k]||def||opts[0][0];return `<div class="seg">${opts.map(([v,l])=>`<button class="${cur===v?'on':''}" data-a="sub" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`};
@@ -342,3 +342,11 @@ A.exSave=async({id})=>{const n=(S.f.ex_n||'').trim();if(!n)return toast('운동 
  await put('exlib',nid,{...exDoc(nid),...extra,custom:true,n,en:fv('ex_en',e.en||''),cat:g('ex_cat',e.cat||'기타'),eq:g('ex_eq',e.eq||''),p:MKEYS.filter(k=>g('ex_p_'+k,(e.p||[]).includes(k))),s:MKEYS.filter(k=>g('ex_s_'+k,(e.s||[]).includes(k))),a:g('ex_a',e.a||''),u:g('ex_u',e.u||''),st:lines(g('ex_st',(e.st||[]).join('\n'))),c:lines(g('ex_c',(e.c||[]).join('\n')))});clearF('ex_');S.gen=null;toast('운동 사전에 저장했어요');closeModal()};
 A.exDel=async({id})=>{if(!await ask('이 운동을 사전에서 삭제할까요?','','삭제',true))return;await delDoc('exlib',id);closeModal()};
 
+
+// ---- 새로고침해도 보던 탭 유지 ----
+const NAV0=(()=>{try{return JSON.parse(localStorage.getItem('core_nav')||'null')}catch(e){return null}})();
+function saveNav(){if(!S.user)return;const st=S.viewAs?(S.adminState||{}):{tab:S.tab,sub:S.sub,sel:S.selMember};try{localStorage.setItem('core_nav',JSON.stringify({u:S.user.id,tab:st.tab||'home',sub:st.sub||{},sel:st.sel||null,at:Date.now()}))}catch(e){}}
+function restoreNav(){if(S._navDone)return;S._navDone=1;const n=NAV0;if(!n||!S.user||n.u!==S.user.id||Date.now()-(n.at||0)>12*3600e3)return;S.tab=n.tab||'home';S.sub={...(n.sub||{})};if(n.sel&&S.members[n.sel])S.selMember=n.sel;
+ let y=0;try{y=+sessionStorage.getItem('core_y')||0;sessionStorage.removeItem('core_y')}catch(e){}if(y)setTimeout(()=>window.scrollTo(0,y),60)}
+{const _r0=render;render=function(){_r0();saveNav()}}
+A.goHome=()=>{if(S.modal)closeModal();S.tab='home';S.selMember=null;window.scrollTo(0,0);render()};
