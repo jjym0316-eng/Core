@@ -85,7 +85,7 @@ function profileForm(mid){const p=S.members[mid]?.profile||{};const i=(k,l,u='',
  ${i('disease','질환·복용약','','text','예: 고혈압, 당뇨, 없음')}${i('allergy','알레르기·못 먹는 음식','','text')}${i('pref','좋아하는 음식 / 생활 패턴','','text','예: 점심은 회사 구내식당')}<p class="xs muted">인바디를 올리면 몸무게·체지방률·골격근량·기초대사량이 자동으로 채워져요.</p>`}
 function readProfile(mid){const p=S.members[mid]?.profile||{};const o={};PFK.forEach(k=>o[k]=fv(fk(mid,'pf_'+k),p[k]??''));return o}
 A.saveProfile=async({m:mid})=>{await act('profile',{memberId:mid,profile:readProfile(mid)});toast('신체 정보를 저장했어요')};
-function dietAI(mid){const D=md(mid).diet||{};return `<div class="card"><h3>내 신체 정보</h3>${profileForm(mid)}<div class="row"><button class="btn" data-a="saveProfile" data-m="${mid}">정보 저장</button><button class="btn grad" style="flex:1" data-a="genDiet" data-m="${mid}" ${dis('gd'+mid)}>${bz('gd'+mid,ic('spark',16)+' AI 식단 만들기','AI가 식단을 구성 중…')}</button></div></div>
+function dietAI(mid){const D=md(mid).diet||{};return `<div class="card"><h3>내 신체 정보</h3>${profileForm(mid)}<div class="row"><button class="btn" data-a="saveProfile" data-m="${mid}">정보 저장</button><button class="btn grad" style="flex:1" data-a="genDiet" data-m="${mid}" ${dis('gd'+mid)}>${bz('gd'+mid,ic('spark',16)+' AI 식단 만들기'+aiLeftTxt('diet'),'AI가 식단을 구성 중…')}</button></div></div>
  ${D.aiPlan?planHTML(D.aiPlan,'AI 추천 식단'):''}<p class="xs muted">AI 식단은 일반적인 참고용이에요. 질환이 있거나 약을 복용 중이면 의사·트레이너와 상의해주세요.</p>`}
 A.genDiet=({m:mid})=>busy('gd'+mid,async()=>{const p=readProfile(mid);await act('profile',{memberId:mid,profile:p});const ib=md(mid).inbody[0];const tp=md(mid).diet?.plan;
  const r=await ai(`너는 스포츠 영양사다. 아래 회원 정보로 한국에서 쉽게 구할 수 있는 음식으로 하루 식단을 구성하라.
@@ -93,7 +93,7 @@ A.genDiet=({m:mid})=>busy('gd'+mid,async()=>{const p=readProfile(mid);await act(
 질환/약:${p.disease||'없음'} 알레르기/못 먹는 음식:${p.allergy||'없음'} 생활/선호:${p.pref||'-'}
 ${ib?`[최근 인바디 ${ib.date}] ${JSON.stringify(ib.metrics||{})}`:''}${tp?`\n[트레이너 식단 규칙 — 반드시 존중] ${(tp.rules||[]).join(' / ')}`:''}
 기초대사량·활동량·목표로 하루 칼로리와 탄단지(g)를 계산하고 근거(rationale) 2문장. 질환이 있으면 맞게 조절. 각 음식에 양(g/개). 한국어.
-JSON: {"title":string,"kcal":number,"carbs":"000g","protein":"000g","fat":"00g","rationale":string,"meals":{"breakfast":[{"food":string,"amount":string,"note":string}],"lunch":[],"dinner":[],"snack":[]},"rules":[string],"avoid":[string],"tips":[string]}`);
+JSON: {"title":string,"kcal":number,"carbs":"000g","protein":"000g","fat":"00g","rationale":string,"meals":{"breakfast":[{"food":string,"amount":string,"note":string}],"lunch":[],"dinner":[],"snack":[]},"rules":[string],"avoid":[string],"tips":[string]}`,{kind:'diet'});
  if(!r||!r.meals)throw new Error('식단을 만들지 못했어요. 다시 시도해주세요.');await put('diets',mid,{...(md(mid).diet||{}),memberId:mid,aiPlan:r,aiAt:Date.now()},logo('diet',`${nm(mid)} AI 식단 생성 (${r.kcal||'?'}kcal)`));toast('AI 식단이 준비됐어요')});
 
 // ================= 예약 =================

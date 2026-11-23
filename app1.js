@@ -97,7 +97,9 @@ async function upload(file,max=1600){const n=(file.name||'').toLowerCase();let t
  else if(n.endsWith('.pdf'))t='application/pdf';
  const u=await api('POST','/api/upload-url',{name:file.name||'',type:t,size:blob.size});let r;try{r=await fetch(u.uploadUrl,{method:'PUT',headers:{'content-type':u.type,'x-upsert':'false'},body:blob})}catch(e){throw new Error('인터넷 연결을 확인해주세요.')}if(!r.ok)throw new Error('업로드에 실패했어요. 다시 시도해주세요.');S.blobCache[u.id]=blob;return {id:u.id,type:u.type}}
 async function docxText(file){await loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');const z=await window.JSZip.loadAsync(file);const f=z.file('word/document.xml');if(!f)throw new Error('Word 문서를 읽지 못했어요.');const xml=await f.async('string');return xml.replace(/<w:tab\/>/g,'\t').replace(/<w:br[^>]*\/>/g,'\n').replace(/<\/w:p>/g,'\n').replace(/<\/w:tc>/g,' | ').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/\n{3,}/g,'\n\n').trim()}
-async function ai(prompt,{files,tier}={}){const r=await api('POST','/api/ai',{prompt,files,tier});return r.result}
+async function ai(prompt,{files,tier,kind}={}){try{const r=await api('POST','/api/ai',{prompt,files,tier,kind});return r.result}finally{if(kind)loadAiLeft()}}
+async function loadAiLeft(){if(!S.user||S.role==='admin'){S.aiLeft=null;return}try{S.aiLeft=await api('GET','/api/ai/usage');schedule()}catch(e){}}
+const aiLeftTxt=k=>S.aiLeft&&!S.viewAs?` <span class="xs" style="opacity:.85">(오늘 ${S.aiLeft[k]}/${S.aiLeft.limit}회 남음)</span>`:'';
 const wikiC={};
 async function wiki(t){if(t in wikiC)return wikiC[t];wikiC[t]=null;try{const r=await api('GET','/api/wiki?t='+encodeURIComponent(t));wikiC[t]=r.result}catch(e){}return wikiC[t]}
 
@@ -130,7 +132,7 @@ function vLogin(){return `<div class="auth"><div style="position:absolute;top:ca
  <div class="err">${esc(S.err||S.loginMsg||'')}</div><button class="btn grad lg full" data-a="login" ${dis('login')}>${bz('login','로그인')}</button>
  <p class="xs muted" style="text-align:center">계정이 없으신가요? 트레이너에게 등록을 요청해주세요.</p></div></div>`}
 A.login=()=>busy('login',async()=>{S.err='';S.loginMsg='';try{setTok(await api('POST','/api/login',{id:S.f.lg_id,pw:S.f.lg_pw,code:S.f.lg_code}));S.f={};S.tab='home';await loadMe()}catch(e){S.err=e.message}});
-async function loadMe(){if(!TOK){S.user=null;render();return}try{const r=await api('GET','/api/me');S.user=r.user;S.role=r.role;S.ai=r.ai;S.since=0;await sync()}catch(e){S.user=null}render()}
+async function loadMe(){if(!TOK){S.user=null;render();return}try{const r=await api('GET','/api/me');S.user=r.user;S.role=r.role;S.ai=r.ai;S.since=0;await sync();loadAiLeft()}catch(e){S.user=null}render()}
 
 // ================= 레이아웃 =================
 function previewBar(){if(!S.viewAs)return '';const m=S.members[S.viewAs];return `<div class="pvbar"><span>👀 <b>${esc(m?.name||'회원')}</b>님이 보는 화면 (미리보기)</span><span class="row nw" style="gap:6px">${members().length>1?`<button class="btn sm" data-a="viewAsPick">회원 바꾸기</button>`:''}<button class="btn sm pri" data-a="viewAsExit">관리자로</button></span></div>`}
@@ -201,7 +203,7 @@ function routineSec(mid,adm){const R=md(mid).routine||{};const base=R.baseline||
  <div><label class="fl">운동 가능 요일</label><div class="daychk">${DAYS7.map(x=>`<label><input type="checkbox" data-f="${fk(mid,'d_'+x)}" ${fv(fk(mid,'d_'+x),(P.days||[]).includes(x))?'checked':''}><span>${x}</span></label>`).join('')}</div></div>
  <div class="fg">${sel('split','루틴(분할)',['AI 추천','무분할(전신)','상·하체 2분할','3분할(밀기/당기기/하체)','4분할','5분할'],'AI 추천')}${sel('intensity','강도',['낮음(입문)','보통','높음','매우 높음'],'보통')}${sel('time','1회 운동시간',['30분','45분','60분','75분','90분'],'60분')}${sel('cardio','유산소',['없음','웨이트 후 20분','웨이트 후 30분','웨이트 전 10분 워밍업','별도 유산소 데이'],'웨이트 후 20분')}${sel('goal','목표',['체지방 감량','근육량 증가','근력 향상','체력·건강','체형 교정','재활·통증 관리'],'체지방 감량')}${sel('level','운동 경력',['입문(3개월 미만)','초급(1년 미만)','중급(1~3년)','상급(3년 이상)'],'초급(1년 미만)')}</div>
  <div><label class="fl">추가 요청 (통증 부위, 집중 부위, 피하고 싶은 운동 등)</label><textarea class="inp" data-f="${fk(mid,'memo')}" placeholder="예: 오른쪽 어깨가 불편해요. 하체 위주로 해주세요.">${esc(fv(fk(mid,'memo'),P.memo||''))}</textarea></div>
- <button class="btn grad lg full" data-a="genRoutine" data-m="${mid}" ${dis('gen'+mid)}>${bz('gen'+mid,ic('spark',18)+' AI 루틴 생성','AI가 루틴을 설계 중… (최대 1분)')}</button></div>
+ <button class="btn grad lg full" data-a="genRoutine" data-m="${mid}" ${dis('gen'+mid)}>${bz('gen'+mid,ic('spark',18)+' AI 루틴 생성'+(adm?'':aiLeftTxt('routine')),'AI가 루틴을 설계 중… (최대 1분)')}</button></div>
  ${plan?`<div class="card"><div class="row sb"><h2>${esc(plan.title||'나의 주간 루틴')}</h2><span class="xs muted">${ago(R.generatedAt)} · ${R.generatedBy==='admin'?'트레이너':'회원'} 생성</span></div><p class="sm">${esc(plan.summary||'')}</p>
  ${(plan.days||[]).map(day=>{const isT=String(day.day||'').startsWith(dw);return `<div class="day ${isT?'today':''}"><div class="row sb"><div class="row"><b style="font-size:19px">${esc(day.day)}</b><span class="chip p">${esc(day.focus||'')}</span>${isT?'<span class="chip r">오늘</span>':''}</div><span class="xs muted">${esc(day.minutes?day.minutes+'분':'')}</span></div>
  ${day.warmup?`<div class="xs muted">🔥 워밍업 · ${esc(day.warmup)}</div>`:''}
@@ -224,7 +226,7 @@ ${recent.join('\n')||'- 없음'}
 [조건] 운동 가능 요일:${prefs.days.join(',')} / 분할:${prefs.split} / 강도:${prefs.intensity} / 1회 운동시간:${prefs.time} / 유산소:${prefs.cardio} / 목표:${prefs.goal} / 경력:${prefs.level}
 [추가 요청] ${prefs.memo||'없음'}
 규칙: 운동 가능 요일에만 운동일 배치(요일은 "월" 같은 한 글자). 기존 기록의 무게를 기준으로 강도에 맞는 구체적 무게(kg) 제시, 기록 없는 종목은 "가볍게 시작(RPE 6)". 운동 이름은 한국 헬스장 통용 이름(랫풀다운, 벤치프레스, 레그프레스 등). 1회 운동시간 안에 끝나도록 종목 수 조절, 유산소 조건 반영, 부상 부위는 피하거나 대체. 한국어로 짧게.
-JSON: {"title":string,"summary":string,"days":[{"day":"월","focus":string,"minutes":number,"warmup":string,"exercises":[{"name":string,"sets":number,"reps":string,"weight":string,"rest":string,"tip":string}],"cardio":string,"cooldown":string}],"progression":string,"cautions":[string]}`);
+JSON: {"title":string,"summary":string,"days":[{"day":"월","focus":string,"minutes":number,"warmup":string,"exercises":[{"name":string,"sets":number,"reps":string,"weight":string,"rest":string,"tip":string}],"cardio":string,"cooldown":string}],"progression":string,"cautions":[string]}`,{kind:'routine'});
  if(!plan||!Array.isArray(plan.days))throw new Error('루틴 결과를 읽지 못했어요. 다시 시도해주세요.');
  await put('routines',mid,{...md(mid).routine,memberId:mid,prefs,plan,generatedAt:Date.now(),generatedBy:S.role},logo('routine',`${nm(mid)} AI 루틴 생성 (${prefs.days.join('')} · ${prefs.goal})`));toast('새 루틴이 만들어졌어요!')});
 // ---- 운동 진행 모드 ----
