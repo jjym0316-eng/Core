@@ -99,7 +99,7 @@ async function upload(file,max=1600){const n=(file.name||'').toLowerCase();let t
 async function docxText(file){await loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');const z=await window.JSZip.loadAsync(file);const f=z.file('word/document.xml');if(!f)throw new Error('Word 문서를 읽지 못했어요.');const xml=await f.async('string');return xml.replace(/<w:tab\/>/g,'\t').replace(/<w:br[^>]*\/>/g,'\n').replace(/<\/w:p>/g,'\n').replace(/<\/w:tc>/g,' | ').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/\n{3,}/g,'\n\n').trim()}
 async function ai(prompt,{files,tier,kind}={}){try{const r=await api('POST','/api/ai',{prompt,files,tier,kind});return r.result}finally{if(kind)loadAiLeft()}}
 async function loadAiLeft(){if(!S.user||S.role==='admin'){S.aiLeft=null;return}try{S.aiLeft=await api('GET','/api/ai/usage');schedule()}catch(e){}}
-const aiLeftTxt=k=>S.aiLeft&&!S.viewAs?` <span class="xs" style="opacity:.85">(${S.aiLeft[k]}/${S.aiLeft.limit}회 남음)</span>`:'';
+const aiLeftTxt=k=>S.aiLeft&&!S.viewAs?` <span class="xs" style="opacity:.85">(총 ${S.aiLeft[k]}/${S.aiLeft.limit}회 남음)</span>`:'';
 const wikiC={};
 async function wiki(t){if(t in wikiC)return wikiC[t];wikiC[t]=null;try{const r=await api('GET','/api/wiki?t='+encodeURIComponent(t));wikiC[t]=r.result}catch(e){}return wikiC[t]}
 
