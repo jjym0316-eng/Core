@@ -262,18 +262,13 @@ A.wlDel=async({i,m:mid})=>{if(!await ask('이 기록을 삭제할까요?','','�
 // ---- 운동 사전 ----
 function libSec(adm){return `<div class="row nw"><input class="inp" placeholder="운동 이름 검색 (예: 랫풀다운)" data-f="libQ" data-live="lib" value="${esc(fv('libQ'))}">${adm?`<button class="btn pri" data-a="exNew">${ic('plus',16)}추가</button>`:''}</div>
  <div class="pills">${['전체',...EXCATS,'기타'].map(c=>`<button class="pill ${S.libCat===c?'on':''}" data-a="libCat" data-v="${c}">${c}</button>`).join('')}</div><div id="p-lib">${PART.lib()}</div>`}
-// 대표 사진: 트레이너가 올린 사진 → 지정 사진(Wikimedia Commons) → 위키백과 문서의 실제 사진(JPG) → 근육 지도
-const photoC=(()=>{const c=ls.get('core_exphoto2');return c&&typeof c==='object'?c:{}})();
-const commons=f=>'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(f)+'?width=720';
-function exPhoto(e){const L=S.exlib[e.id];if(L?.photo)return {u:fileUrl(L.photo),own:1};if(EXPHOTO[e.id])return {u:commons(EXPHOTO[e.id]),src:'https://commons.wikimedia.org/wiki/File:'+encodeURIComponent(EXPHOTO[e.id].replace(/ /g,'_'))};const c=photoC[e.id];if(c&&c.u)return c;return null}
-const photoQ=new Set();
-async function findPhoto(e){if(photoQ.has(e.id)||(e.id in photoC)||!WIKI_X[e.id]||EXPHOTO[e.id])return;photoQ.add(e.id);
- try{const r=await fetch('https://en.wikipedia.org/api/rest_v1/page/media-list/'+WIKI_X[e.id]);if(!r.ok)throw 0;const j=await r.json();
-  const it=(j.items||[]).find(x=>x.type==='image'&&/\.jpe?g$/i.test(x.title||'')&&!/logo|map|portrait|statue|medal|olymp|record|champion/i.test(x.title||''));
-  const s=it&&((it.srcset||[]).find(x=>x.scale==='2x')||(it.srcset||[])[0]);photoC[e.id]=s?{u:(s.src.startsWith('//')?'https:':'')+s.src,src:'https://commons.wikimedia.org/wiki/'+encodeURIComponent((it.title||'').replace(/ /g,'_'))}:{};
-  ls.set('core_exphoto2',photoC);schedule();if(S.modal)renderModal()}catch(err){}finally{photoQ.delete(e.id)}}
+// 대표 그림: 트레이너가 올린 사진 → Core 해부학 일러스트(시작·마무리 자세, 쓰는 근육 빨간색) → 근육 지도
+const artC={};
+function exArtUrl(e,card){const k=e.id+(card?'_c':'');if(artC[k])return artC[k];if(typeof POSE==='undefined'||!POSE[e.id])return null;let svg=exArt(e.id,{p:e.p||[],s:e.s||[]});if(!svg)return null;
+ if(card)svg=svg.replace(/viewBox="0 0 800 300"/,'viewBox="400 0 400 300"');try{artC[k]=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}))}catch(err){artC[k]='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}return artC[k]}
+function exPhoto(e,card){const L=S.exlib[e.id];if(L?.photo)return {u:fileUrl(L.photo),own:1};const a=exArtUrl(e,card);return a?{u:a,art:1}:null}
 const imgFail="this.closest('.exph').classList.add('noimg')";
-function exThumb(e,big){const p=exPhoto(e);if(!p)findPhoto(e);return `<div class="exph ${big?'big':''} ${p?'':'noimg'}">${p?`<img src="${esc(p.u)}" alt="${esc(e.n)} 사진" loading="lazy" onerror="${imgFail}">`:''}<div class="bmf">${bodyMap(e.p,e.s)}</div><span class="excat">${esc(e.cat)}</span></div>`}
+function exThumb(e,big){const p=exPhoto(e,!big);return `<div class="exph ${big?'big':''} ${p?'':'noimg'} ${p&&p.art?'art':''}">${p?`<img src="${esc(p.u)}" alt="${esc(e.n)} 그림" loading="lazy" onerror="${imgFail}">`:''}<div class="bmf">${bodyMap(e.p,e.s)}</div><span class="excat">${esc(e.cat)}</span></div>`}
 PART.lib=()=>{const q=(S.f.libQ||'').trim().toLowerCase();const l=allEx().filter(e=>(S.libCat==='전체'||e.cat===S.libCat||(S.libCat==='기타'&&!EXCATS.includes(e.cat)))&&(!q||e.n.toLowerCase().includes(q)||(e.en||'').toLowerCase().includes(q)));
  return l.length?`<div class="lib">${l.map(e=>`<div class="exc" data-a="exOpen" data-id="${e.id}">${exThumb(e)}<div class="exb"><b>${esc(e.n)}</b><div class="xs muted">${esc(e.en||'')}</div><div class="xs pc b">${(e.p||[]).map(k=>MN[k]?.split('(')[0]).filter(Boolean).join(' · ')}</div>${S.exlib[e.id]?.notes||S.exlib[e.id]?.media?.length?'<span class="chip p xs">트레이너 자료</span>':''}</div></div>`).join('')}</div>`:'<p class="empty">찾는 운동이 없어요.</p>'};
 A.libCat=({v})=>{S.libCat=v;render()};
@@ -291,8 +286,8 @@ function musCard(k,role,w){const M=MUS[k]||{};const wi=w&&w.m[k];return `<div cl
 function exDetail(e){const L=S.exlib[e.id]||{};const adm=admin();const media=L.media||[];const links=L.links||[];const w=S.wikiFor?.id===e.id?S.wikiFor:null;const p=exPhoto(e);const tab=S.exTab||'how';
  const allTxt=[e.a,...(e.p||[]).concat(e.s||[]).map(k=>MUS[k]?.fn||''),...(e.st||[]),...(e.c||[]),L.notes||''].join(' ');const terms=termsIn(allTxt);
  return `${mh(esc(e.n))}${exThumb(e,true)}
- <div class="row sb"><div class="row" style="gap:6px"><span class="chip p">${esc(e.cat)}</span>${e.eq?`<span class="chip">${esc(e.eq)}</span>`:''}<span class="xs muted">${esc(e.en||'')}</span></div>${p&&p.src?`<a class="xs muted" href="${esc(p.src)}" target="_blank" rel="noopener">사진 출처 ↗</a>`:''}</div>
- ${adm?`<div class="row"><label class="btn sm soft">${S.busy['exp'+e.id]?'<span class="spin"></span> 올리는 중…':ic('cam',14)+' 대표 사진 바꾸기'}<input type="file" hidden accept="image/*" data-file="exPhotoUp" data-id="${e.id}"></label>${L.photo?`<button class="btn sm ghost" data-a="exPhotoReset" data-id="${e.id}">기본 사진으로</button>`:''}</div>`:''}
+ <div class="row sb"><div class="row" style="gap:6px"><span class="chip p">${esc(e.cat)}</span>${e.eq?`<span class="chip">${esc(e.eq)}</span>`:''}<span class="xs muted">${esc(e.en||'')}</span></div>${p&&p.art?'<span class="xs muted">빨간색 = 주로 쓰는 근육</span>':''}</div>
+ ${adm?`<div class="row"><label class="btn sm soft">${S.busy['exp'+e.id]?'<span class="spin"></span> 올리는 중…':ic('cam',14)+' 대표 사진 바꾸기'}<input type="file" hidden accept="image/*" data-file="exPhotoUp" data-id="${e.id}"></label>${L.photo?`<button class="btn sm ghost" data-a="exPhotoReset" data-id="${e.id}">기본 그림으로</button>`:''}</div>`:''}
  <div class="seg"><button class="${tab==='how'?'on':''}" data-a="exTab" data-v="how">동작 방법</button><button class="${tab==='ana'?'on':''}" data-a="exTab" data-v="ana">🧬 해부학</button><button class="${tab==='term'?'on':''}" data-a="exTab" data-v="term">📖 용어 ${terms.length||''}</button></div>
  ${tab==='ana'?`<div class="card flat" style="padding:10px">${bodyMap(e.p,e.s)}<div class="row" style="justify-content:center;margin-top:6px"><span class="chip xs"><i style="width:10px;height:10px;border-radius:3px;background:#FF5A78;display:inline-block"></i>주동근</span><span class="chip xs"><i style="width:10px;height:10px;border-radius:3px;background:var(--mus2);display:inline-block"></i>보조근</span></div></div>
  ${e.a?`<div class="sec"><h4>이 운동은 이렇게 작동해요</h4><p class="sm">${markTerms(e.a)}</p><p class="xs muted">밑줄 친 말은 '용어' 탭에서 뜻을 볼 수 있어요.</p></div>`:''}

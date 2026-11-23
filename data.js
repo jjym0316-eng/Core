@@ -233,9 +233,6 @@ const WIKI_M={chest:'Pectoralis_major',delts:'Deltoid_muscle',biceps:'Biceps',tr
 const WIKI_X={bench:'Bench_press',pushup:'Push-up',latpull:'Pulldown_exercise',bbrow:'Bent-over_row',pullup:'Pull-up_(exercise)',deadlift:'Deadlift',ohp:'Overhead_press',lateral:'Lateral_raise',curl:'Biceps_curl',squat:'Squat_(exercise)',legpress:'Leg_press',rdl:'Romanian_deadlift',lunge:'Lunge_(exercise)',legext:'Leg_extension',legcurl:'Leg_curl',hipthrust:'Hip_thrust',calf:'Calf_raises',plank:'Plank_(exercise)',cablecrunch:'Crunch_(exercise)',cablerow:'Seated_cable_row',pushdown:'Pushdown_(exercise)',cablefly:'Fly_(exercise)',incdb:'Bench_press',facepull:'Face_pull'};
 const QUOTES=['오늘의 한 세트가 내일의 체형을 만들어요.','완벽한 하루보다 꾸준한 하루가 이깁니다.','몸은 기록한 만큼 변해요. 오늘도 남겨볼까요?','어제보다 1회 더, 그거면 충분해요.','식단은 참는 게 아니라 고르는 거예요.','쉬는 날도 계획의 일부예요. 잘 쉬는 것도 실력!','작은 습관이 큰 변화를 만듭니다.','땀은 거짓말을 하지 않아요.','물 한 잔, 스트레칭 5분. 시작은 가볍게.','지금 힘든 만큼 다음 달의 내가 고마워할 거예요.','기록은 최고의 트레이너예요.','오늘도 나를 위한 1시간, 멋져요.','근육은 주방에서 완성돼요. 단백질 챙기기!','포기하고 싶을 때가 성장 직전이에요.'];
 
-// ===== 운동 대표 사진 (Wikimedia Commons 실제 사진 파일명) =====
-const EXPHOTO={pushup:'Push-up.jpg',cablefly:'Chest flies with cable machine - cable crossover flies.jpg',latpull:'Girl doing lat pulldown exercise.jpg',cablerow:'Woman using a seated cable row machine at the gym.jpg',deadlift:'Fit young man doing deadlift exercise in gym.jpg',lateral:'DumbbellLateralRaise.JPG',calf:'DumbbellStandingCalfRaise.JPG',plank:'Personal training plank exercise instruction.jpg'};
-
 // ===== 근육 해설 =====
 const MUS={
 chest:{t:'대흉근',h:'大胸筋 · 큰가슴근',en:'Pectoralis major',loc:'가슴 앞쪽을 덮는 부채꼴 근육. 쇄골·흉골·갈비뼈에서 시작해 위팔뼈(상완골) 앞쪽에 붙어요.',fn:'팔을 몸 앞쪽 가운데로 모으는 수평 내전, 팔을 앞으로 드는 어깨 굴곡, 팔을 안쪽으로 돌리는 내회전을 해요.'},
