@@ -137,11 +137,18 @@ A.bkChange=({id})=>{const b=S.bookingMap[id];if(!b||!canModify(b))return toast('
 A.bkCancel=async({id})=>{const b=S.bookingMap[id];if(!b)return;if(!canModify(b))return toast(`예약 ${cancelH()}시간 전부터는 취소할 수 없어요`);if(!await ask('예약을 취소할까요?',`${fmtD(b.date)} ${b.time} ${typeName(b.type)}`,'예약 취소',true))return;await act('book/cancel',{id});toast('예약을 취소했어요')};
 
 // ================= 영상 =================
-function vcard(v,adm){const id=ytId(v.url);const playing=S.playV===v.id;return `<div class="vcard">${playing&&id?ytEmbed(id):`<div class="vth" data-a="${id?'vPlay':'vOpen'}" data-id="${v.id}" data-u="${esc(v.url)}" style="background-image:${id?`linear-gradient(rgba(0,0,0,.05),rgba(0,0,0,.25)),url(https://i.ytimg.com/vi/${id}/hqdefault.jpg)`:VCOL[v.cat]}"><span class="ct chip w">${VC[v.cat]||''}</span><div class="pl">${ic('play',24)}</div></div>`}<div class="vb"><b>${esc(v.title)}</b>${v.desc?`<div class="xs muted">${esc(v.desc)}</div>`:''}${adm?`<button class="btn sm ghost dng" style="margin-top:6px" data-a="vidDel" data-id="${v.id}">삭제</button>`:''}</div></div>`}
+function vcard(v,adm){const id=ytId(v.url);if(S.playV===v.id&&id)return `<div class="vcard">${ytEmbed(id)}<div class="vb row sb nw"><b class="sm">${esc(v.title)}</b><button class="btn sm ghost" data-a="vStop">닫기</button></div></div>`;
+ return `<div class="vrow"><div class="vths" data-a="${id?'vPlay':'vOpen'}" data-id="${v.id}" data-u="${esc(v.url)}" style="background-image:${id?`url(https://i.ytimg.com/vi/${id}/mqdefault.jpg)`:VCOL[v.cat]}"><div class="pl">${ic('play',14)}</div></div><div class="grow" data-a="${id?'vPlay':'vOpen'}" data-id="${v.id}" data-u="${esc(v.url)}"><div class="sm b vtt">${esc(v.title)}</div>${v.desc?`<div class="xs muted ell">${esc(v.desc)}</div>`:''}</div>${adm?`<button class="btn sm ghost dng" data-a="vidDel" data-id="${v.id}">삭제</button>`:''}</div>`}
+const VPP=10;
+function vList(l,key,adm){if(!l.length)return '<p class="empty">아직 등록된 영상이 없어요.</p>';const pages=Math.ceil(l.length/VPP);const pg=Math.min(Math.max(1,S.vpage?.[key]||1),pages);
+ const nums=[];for(let i=1;i<=pages;i++)if(i===1||i===pages||Math.abs(i-pg)<=2)nums.push(i);else if(nums[nums.length-1]!=='…')nums.push('…');
+ return `<div class="vlist">${l.slice((pg-1)*VPP,pg*VPP).map(v=>vcard(v,adm)).join('')}</div>${pages>1?`<div class="pager"><button class="pgb" data-a="vPage" data-k="${key}" data-v="${pg-1}" ${pg<=1?'disabled':''}>‹</button>${nums.map(n=>n==='…'?'<span class="pgd">…</span>':`<button class="pgb ${n===pg?'on':''}" data-a="vPage" data-k="${key}" data-v="${n}">${n}</button>`).join('')}<button class="pgb" data-a="vPage" data-k="${key}" data-v="${pg+1}" ${pg>=pages?'disabled':''}>›</button></div><p class="xs muted" style="text-align:center">${l.length}편 중 ${(pg-1)*VPP+1}–${Math.min(pg*VPP,l.length)}</p>`:''}`}
+A.vPage=({k,v})=>{S.vpage={...(S.vpage||{}),[k]:+v};S.playV=null;render();const el=document.querySelector('.vlist');if(el)el.scrollIntoView({block:'start',behavior:'smooth'})};
+A.vStop=()=>{S.playV=null;render()};
 A.vPlay=({id})=>{S.playV=id;render()};A.vOpen=({u})=>window.open(u,'_blank');
 function vMVideo(){const cur=subOf('video','exercise');const opts=[...Object.entries(VC),['mine','📹 내 자세 피드백']];
  return `<div class="pills">${opts.map(([k,l])=>`<button class="pill ${cur===k?'on':''}" data-a="sub" data-k="video" data-v="${k}">${l}</button>`).join('')}</div>
- ${cur==='mine'?formVidSec(me().id,false):(()=>{const l=S.videos.filter(v=>v.cat===cur);return l.length?`<div class="vgrid">${l.map(v=>vcard(v)).join('')}</div>`:'<p class="empty">아직 등록된 영상이 없어요.</p>'})()}`}
+ ${cur==='mine'?formVidSec(me().id,false):vList(S.videos.filter(v=>v.cat===cur),'m_'+cur)}`}
 function formVidSec(mid,adm){const l=S.formvids.filter(v=>!mid||v.memberId===mid);
  return `${!adm?`<div class="card tint1"><h3>📹 운동 영상 올리고 피드백 받기</h3><p class="sm muted">혼자 운동하는 모습을 찍어 올리면 트레이너가 자세를 보고 코멘트해 드려요. (최대 50MB · 15~30초 권장)</p>
  <input class="inp" placeholder="제목 (예: 스쿼트 60kg 자세 봐주세요)" data-f="fv_title" value="${esc(fv('fv_title'))}"><input class="inp" placeholder="궁금한 점 (선택)" data-f="fv_note" value="${esc(fv('fv_note'))}">
@@ -271,7 +278,7 @@ A.abSave=async()=>{if(!S.f.ab_mem||!S.f.ab_t||!S.f.ab_d)return toast('날짜, �
 // ---- 콘텐츠 ----
 function vAContent(){const cur=subOf('content','video');const nv=S.formvids.filter(v=>v.status!=='reviewed').length;
  return `<h1>콘텐츠</h1>${seg('content',[['video','정보 영상'],['lib','운동 사전'],['fv',`회원 영상${nv?` ${nv}`:''}`],['notice','공지']],'video')}${cur==='lib'?libSec(true):cur==='fv'?formVidSec(null,true):cur==='notice'?noticeAdmin():videoAdmin()}`}
-function videoAdmin(){const vc=S.f.vf_cat||'exercise';const Y=S.yt||{};const added=new Set(S.videos.map(v=>ytId(v.url)).filter(Boolean));
+function videoAdmin(){const vc=S.f.vf_cat||'exercise';const Y=S.yt||{};const added=new Set(S.videos.filter(v=>v.cat===vc).map(v=>ytId(v.url)).filter(Boolean));
  const vrow=v=>`<div class="ytv"><img src="${esc(v.thumb)}" alt="" loading="lazy"><div class="grow"><div class="sm b ytt">${esc(v.title)}</div><div class="xs muted">${v.channel?esc(v.channel)+' · ':''}${v.at?String(v.at).slice(0,10):''}</div></div>${added.has(v.id)?'<span class="chip g xs">추가됨</span>':`<button class="btn sm pri" data-a="ytAdd" data-id="${v.id}" ${dis('yta'+v.id)}>${bz('yta'+v.id,'추가','…')}</button>`}</div>`;
  const fmtN=n=>n==null?'':n>=10000?(n/10000).toFixed(n>=100000?0:1)+'만':n.toLocaleString();
  return `<div class="card col"><h3>유튜브 영상 추가</h3>
@@ -287,7 +294,7 @@ function videoAdmin(){const vc=S.f.vf_cat||'exercise';const Y=S.yt||{};const add
   ${Y.next?`<button class="btn ghost full" data-a="ytMore" ${dis('ytv')}>${bz('ytv','영상 더 보기','불러오는 중…')}</button>`:''}`
  :(Y.channels||[]).length?`<div class="col" style="gap:8px">${Y.channels.map(c=>`<div class="ytch tap" data-a="ytChOpen" data-id="${c.id}"><img src="${esc(c.thumb)}" alt=""><div class="grow"><b>${esc(c.title)}</b><div class="xs muted">${c.info?esc(c.info)+' · ':''}${c.subs?'구독자 '+fmtN(c.subs)+' · ':''}${c.videos?'영상 '+fmtN(c.videos)+'개':''}</div>${c.desc?`<div class="xs muted ell">${esc(c.desc)}</div>`:''}</div>${ic('right',18)}</div>`).join('')}</div>`:''}
  <details ${fv('vf_url')?'open':''}><summary class="sm muted">링크로 직접 추가</summary><div class="col" style="margin-top:8px"><input class="inp" placeholder="유튜브 링크 (https://youtu.be/...)" data-f="vf_url" value="${esc(fv('vf_url'))}"><input class="inp" placeholder="제목" data-f="vf_title" value="${esc(fv('vf_title'))}"><input class="inp" placeholder="한 줄 설명 (선택)" data-f="vf_desc" value="${esc(fv('vf_desc'))}"><button class="btn pri full" data-a="vidAdd">추가</button></div></details></div>
- ${Object.entries(VC).map(([k,l])=>{const a=S.videos.filter(v=>v.cat===k);return a.length?`<h3>${l} <span class="muted sm">${a.length}</span></h3><div class="vgrid">${a.map(v=>vcard(v,true)).join('')}</div>`:''}).join('')||'<p class="empty">등록된 영상이 없어요.</p>'}`}
+ <div class="card col"><div class="row sb"><h3>${VC[vc]} 영상 <span class="muted sm">${S.videos.filter(v=>v.cat===vc).length}편</span></h3><span class="xs muted">위에서 카테고리를 바꾸면 해당 영상만 보여요</span></div>${vList(S.videos.filter(v=>v.cat===vc),'a_'+vc,true)}</div>}`}
 async function ytCall(qs){try{return await api('GET','/api/yt?'+new URLSearchParams(qs))}catch(e){throw e}}
 function ytErr(e){S.yt={...(S.yt||{}),err:e.message,nokey:/키가 아직/.test(e.message)}}
 A.ytSearch=()=>busy('yts',async()=>{const q=(S.f.yt_q||'').trim();if(!q)throw new Error('채널 이름을 입력해주세요.');S.yt={};try{const r=await ytCall({mode:'channels',q});S.yt={channels:r.channels||[]};if(!r.channels?.length)S.yt.err='채널을 찾지 못했어요. 이름을 다시 확인해주세요.'}catch(e){ytErr(e)}});
