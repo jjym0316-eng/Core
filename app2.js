@@ -41,8 +41,14 @@ A.mealCmt=async d=>{const cur=md(d.m).meals[d.d];if(!cur)return toast('기록이
 // ---- 칼로리 검색 ----
 const allFoods=()=>[...S.foods.map(f=>({...f,custom:1})),...FOODS];
 const recentFoods=mid=>{const seen=new Set(),o=[];Object.values(md(mid).meals).sort((a,b)=>b.date.localeCompare(a.date)).forEach(m=>SLOTS.forEach(([k])=>(m.slots?.[k]?.foods||[]).forEach(f=>{if(!seen.has(f.n)&&!f.ai&&o.length<8){seen.add(f.n);o.push(f.n)}})));return o};
-function foodResults(q,ctx){q=q.trim().toLowerCase();const all=allFoods();const r=q?all.filter(f=>f.n.toLowerCase().includes(q)).slice(0,40):all.slice(0,12);
- return (r.length?r.map(f=>`<div class="frow"><div><b>${esc(f.n)}</b> ${f.custom?'<span class="chip p xs">추가 음식</span>':''}<div class="xs muted">${esc(f.sv)} · 탄 ${f.c}g · 단 ${f.p}g · 지 ${f.f}g</div></div><div class="kc num">${Math.round(f.k)}<small>kcal</small></div><button class="btn sm soft" data-a="foodAdd" data-n="${esc(f.n)}" data-ctx="${ctx}">추가</button></div>`).join(''):'<p class="empty">검색 결과가 없어요.</p>')
+const fnorm=s=>String(s||'').toLowerCase().replace(/[\s()·,.\-]/g,'');
+function foodMatch(q){const nq=fnorm(q);if(!nq)return [];const sc=[];for(const f of allFoods()){const n=fnorm(f.n);let s=n===nq?0:n.startsWith(nq)?1:n.includes(nq)?2:fnorm(f.g).includes(nq)?4:-1;if(s<0){const toks=q.trim().toLowerCase().split(/\s+/).filter(Boolean);if(toks.length>1&&toks.every(t=>n.includes(fnorm(t))))s=3}if(s>=0)sc.push([s,n.length,f])}return sc.sort((a,b)=>a[0]-b[0]||a[1]-b[1]).map(x=>x[2]).slice(0,60)}
+A.fcat=({v,ctx})=>{S.f.fcat=S.f.fcat===v?'':v;if(ctx==='modal')renderModal();else render()};
+function foodResults(q,ctx){q=q.trim();const all=allFoods();const fc=S.f.fcat||'';const cats=[...(S.foods.length?['추가 음식']:[]),...FOODCATS];
+ const r=q?foodMatch(q):fc?all.filter(f=>fc==='추가 음식'?f.custom:f.g===fc):[];
+ const catRow=q?'':`<p class="xs muted" style="margin:8px 0 4px">음식 ${all.length}개 · 분류로 찾아보기</p><div class="pills wrap">${cats.map(c=>`<button class="pill ${fc===c?'on':''}" data-a="fcat" data-v="${esc(c)}" data-ctx="${ctx}">${esc(c)}</button>`).join('')}</div>`;
+ if(!q&&!fc)return catRow;
+ return catRow+(r.length?r.map(f=>`<div class="frow"><div><b>${esc(f.n)}</b> ${f.custom?'<span class="chip p xs">추가 음식</span>':''}<div class="xs muted">${esc(f.sv)} · 탄 ${f.c}g · 단 ${f.p}g · 지 ${f.f}g</div></div><div class="kc num">${Math.round(f.k)}<small>kcal</small></div><button class="btn sm soft" data-a="foodAdd" data-n="${esc(f.n)}" data-ctx="${ctx}">추가</button></div>`).join(''):'<p class="empty">검색 결과가 없어요.</p>')
  +(q?`<div class="row" style="margin-top:10px"><button class="btn ghost" style="flex:1" data-a="foodAI" data-q="${esc(q)}" data-ctx="${ctx}" ${dis('fai')}>${bz('fai',ic('spark',16)+' AI로 칼로리 추정','AI 추정 중…')}</button><button class="btn ghost" style="flex:1" data-a="foodManual" data-q="${esc(q)}">직접 입력</button></div>`:'')}
 PART.foodPage=()=>foodResults(S.f.fq||'','page');PART.foodModal=()=>foodResults(S.f.fqm||'','modal');
 const qtySeg=()=>`<div class="row nw"><span class="sm muted b">양</span><div class="seg" style="flex:1">${['0.5','1','1.5','2'].map(q=>`<button class="${(S.f.fqty||'1')===q?'on':''}" data-a="fqty" data-v="${q}">${q}인분</button>`).join('')}</div></div>`;
