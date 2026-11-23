@@ -353,16 +353,17 @@ A.goHome=()=>{if(S.modal)closeModal();S.tab='home';S.selMember=null;window.scrol
 // ---- 제스처: 위→아래 길게 당겨 새로고침 / 좌우로 밀어 탭 이동 ----
 (()=>{let sx=0,sy=0,mode='',pull=0,el=null,tgt=null,done=false;const TH=120,SW=60;
  const ptr=()=>{if(!el){el=document.createElement('div');el.className='ptr';el.innerHTML=ic('refresh',20);document.body.appendChild(el)}return el};
- const noSwipe=t=>!!(t&&t.closest&&t.closest('.pills,.seg,.wkts,input,textarea,select,iframe,.pager,[data-noswipe]'));
+ const noSwipe=(t,dx)=>{if(!t||!t.closest)return false;if(t.closest('iframe,textarea,[data-noswipe]'))return true;
+  for(let n=t;n&&n!==document.body;n=n.parentElement){if(n.scrollWidth>n.clientWidth+2){const ox=getComputedStyle(n).overflowX;if(ox==='auto'||ox==='scroll'){if(dx<0&&n.scrollLeft+n.clientWidth<n.scrollWidth-2)return true;if(dx>0&&n.scrollLeft>2)return true}}}return false};
  const blocked=()=>!!(S.modal||!S.user||S.boot||($('#dlg')&&$('#dlg').children.length));
  const goTab=dir=>{const ks=[...document.querySelectorAll('nav.bot [data-t]')].map(b=>b.dataset.t);const i=ks.indexOf(S.tab);const j=i+dir;if(i<0||j<0||j>=ks.length)return;
   A.go({t:ks[j]});const v=$('#view');if(v){v.classList.remove('swl','swr');void v.offsetWidth;v.classList.add(dir>0?'swl':'swr')}};
  const end=()=>{if(mode==='pull'){const p=ptr();if(pull>=TH){p.classList.add('spin');setTimeout(hardReload,150)}else{p.style.opacity=0;p.style.transform='translate(-50%,0)'}}mode='';pull=0};
- document.addEventListener('touchstart',e=>{done=false;if(e.touches.length!==1||blocked()){mode='x';return}const t=e.touches[0];sx=t.clientX;sy=t.clientY;tgt=e.target;pull=0;mode=(sx<16||sx>innerWidth-16)?'x':''},{passive:true});
+ document.addEventListener('touchstart',e=>{done=false;if(e.touches.length!==1||blocked()){mode='x';return}const t=e.touches[0];sx=t.clientX;sy=t.clientY;tgt=e.target;pull=0;mode=(sx<10||sx>innerWidth-10)?'x':''},{passive:true});
  document.addEventListener('touchmove',e=>{if(mode==='x'||done||e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-sx,dy=t.clientY-sy;
   if(!mode){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;
    if(dy>0&&dy>Math.abs(dx)*1.5&&(window.scrollY||document.documentElement.scrollTop||0)<=0)mode='pull';
-   else if(Math.abs(dx)>Math.abs(dy)*1.2&&!noSwipe(tgt))mode='swipe';else{mode='x';return}}
+   else if(Math.abs(dx)>Math.abs(dy)*1.2&&!noSwipe(tgt,dx))mode='swipe';else{mode='x';return}}
   if(mode==='pull'){if(Math.abs(dx)>dy*0.7){mode='x';ptr().style.opacity=0;return}pull=dy;const p=ptr();p.style.opacity=Math.min(1,dy/TH);p.style.transform=`translate(-50%,${Math.min(dy*0.45,70)}px) rotate(${dy*2}deg)`;p.classList.toggle('ready',dy>=TH)}
   else if(mode==='swipe'&&Math.abs(dx)>=SW&&Math.abs(dx)>Math.abs(dy)*1.2){done=true;mode='x';goTab(dx<0?1:-1)}
  },{passive:true});
