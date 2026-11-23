@@ -29,7 +29,8 @@ const SLOTS=[['breakfast','아침','🌅'],['lunch','점심','🌤️'],['dinner
 const VC={exercise:'운동',diet:'식단',health:'건강',stretch:'스트레칭'};
 const VCOL={exercise:'linear-gradient(135deg,#4F5BFF,#8B5CFF)',diet:'linear-gradient(135deg,#FFB547,#FF6B8B)',health:'linear-gradient(135deg,#21D4A8,#4F8BFF)',stretch:'linear-gradient(135deg,#B78CFF,#FF8FC8)'};
 const typeName=t=>t==='consult'?'PT 상담':'PT 수업';
-const admin=()=>S.role==='admin';
+const admin=()=>S.role==='admin'&&!S.viewAs;
+const isAdminAcct=()=>S.role==='admin';
 
 // ================= 아이콘 & 로고 =================
 const IC={home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',work:'<path d="M6 7v10M3 9.5v5M18 7v10M21 9.5v5M6 12h12"/>',diet:'<path d="M3 12h18a9 9 0 0 1-18 0zM9 8c0-2 2-2 2-4M14 8c0-2 2-2 2-4"/>',cal:'<rect x="3" y="5" width="18" height="16" rx="4"/><path d="M3 10h18M8 3v4M16 3v4"/>',play:'<rect x="3" y="5" width="18" height="14" rx="4"/><path d="M10 9l5 3-5 3z"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/>',users:'<circle cx="9" cy="8" r="3.5"/><path d="M2 20c.8-3.5 3.5-5 7-5s6.2 1.5 7 5M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2 .6 3.4 2.2 4 5"/>',grid:'<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',moon:'<path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/>',left:'<path d="M15 18l-6-6 6-6"/>',right:'<path d="M9 18l6-6-6-6"/>',plus:'<path d="M12 5v14M5 12h14"/>',x:'<path d="M18 6L6 18M6 6l12 12"/>',cam:'<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/>',spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/>',out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',up:'<path d="M12 19V5M5 12l7-7 7 7"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',check:'<path d="M5 12l5 5 9-10"/>',file:'<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/>',flame:'<path d="M12 22c4 0 7-3 7-7 0-5-4-7-5-11-2 3-3 4-3 6-1-1-2-2-2-4-2 2-4 5-4 9 0 4 3 7 7 7z"/>',copy:'<rect x="8" y="8" width="13" height="13" rx="3"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',timer:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>'};
@@ -69,7 +70,7 @@ A.theme=()=>{ls.set('core_theme',S.theme==='dark'?'light':'dark');applyTheme();r
 const themeBtn=()=>`<button class="ib" data-a="theme" title="화면 모드">${ic(S.theme==='dark'?'sun':'moon',18)}</button>`;
 
 // ================= 서버 통신 =================
-async function api(method,url,body){const o={method,headers:{}};if(TOK)o.headers['x-core-token']=TOK;if(body){o.headers['content-type']='application/json';o.body=JSON.stringify(body)}
+async function api(method,url,body){if(S.viewAs&&method!=='GET'&&!url.includes('/api/logout')&&!url.includes('/api/wiki'))throw new Error('회원 화면 미리보기에서는 저장되지 않아요. 관리자로 돌아가서 해주세요.');const o={method,headers:{}};if(TOK)o.headers['x-core-token']=TOK;if(body){o.headers['content-type']='application/json';o.body=JSON.stringify(body)}
  let r;try{r=await fetch(API+url,o)}catch(e){throw new Error('인터넷 연결을 확인해주세요.')}let j=null;try{j=await r.json()}catch(e){}
  if(r.status===401&&TOK&&!url.includes('/api/login')){doLogout(j?.error||'다시 로그인해주세요.');throw new Error(j?.error||'로그인이 필요해요')}
  if(!r.ok)throw new Error(j?.error||'요청을 처리하지 못했어요.');return j}
@@ -101,7 +102,7 @@ const wikiC={};
 async function wiki(t){if(t in wikiC)return wikiC[t];wikiC[t]=null;try{const r=await api('GET','/api/wiki?t='+encodeURIComponent(t));wikiC[t]=r.result}catch(e){}return wikiC[t]}
 
 // ================= 회원 상태 =================
-const me=()=>S.user||{};
+const me=()=>(S.viewAs&&S.members[S.viewAs])||S.user||{};
 const nm=mid=>S.members[mid]?.name||'회원';
 const remaining=m=>Math.max(0,(+m.total||0)-(+m.used||0));
 const isExpired=m=>m.role!=='admin'&&(((+m.total||0)>0&&(+m.used||0)>=(+m.total||0))||(m.endDate&&m.endDate<today()));
@@ -132,8 +133,14 @@ A.login=()=>busy('login',async()=>{S.err='';S.loginMsg='';try{setTok(await api('
 async function loadMe(){if(!TOK){S.user=null;render();return}try{const r=await api('GET','/api/me');S.user=r.user;S.role=r.role;S.ai=r.ai;S.since=0;await sync()}catch(e){S.user=null}render()}
 
 // ================= 레이아웃 =================
+function previewBar(){if(!S.viewAs)return '';const m=S.members[S.viewAs];return `<div class="pvbar"><span>👀 <b>${esc(m?.name||'회원')}</b>님이 보는 화면 (미리보기)</span><span class="row nw" style="gap:6px">${members().length>1?`<button class="btn sm" data-a="viewAsPick">회원 바꾸기</button>`:''}<button class="btn sm pri" data-a="viewAsExit">관리자로</button></span></div>`}
+A.viewAs=({id})=>{const ms=members().filter(m=>m.role!=='admin');if(!ms.length)return toast('먼저 회원을 등록해주세요');if(id&&S.members[id])return startView(id);if(ms.length===1)return startView(ms[0].id);A.viewAsPick()};
+A.viewAsPick=()=>{const ms=members().sort((a,b)=>(a.name||'').localeCompare(b.name||''));openModal(()=>`${mh('어떤 회원 화면으로 볼까요?')}<div class="list">${ms.map(m=>`<div class="li tap" data-a="viewAsGo" data-id="${m.id}"><b class="grow">${esc(m.name)}</b>${stChip(m)}${ic('right',16)}</div>`).join('')}</div>`)};
+A.viewAsGo=({id})=>{closeModal();startView(id)};
+function startView(id){if(!S.viewAs)S.adminState={tab:S.tab,sub:{...S.sub},sel:S.selMember};S.viewAs=id;S.tab='home';S.sub={};S.selMember=null;S.bk={};S.wlDate=null;S.dietDate=null;window.scrollTo(0,0);render();toast(`${S.members[id]?.name||'회원'}님 화면으로 전환했어요`)}
+A.viewAsExit=()=>{const st=S.adminState||{};S.viewAs=null;S.tab=st.tab||'home';S.sub=st.sub||{};S.selMember=st.sel||null;S.bk={};S.wlDate=null;S.dietDate=null;window.scrollTo(0,0);render()};
 function shell(nav,body){const tabs=nav.map(([k,l,i])=>`<button class="${S.tab===k?'on':''}" data-a="go" data-t="${k}">${ic(i,22)}<span>${l}</span></button>`).join('');
- return `<header class="top"><div class="topin">${LOGO(34)}${WORD}${admin()?'<span class="role">관리자</span>':''}<span class="sp"></span>${themeBtn()}<button class="ib" data-a="logout" title="로그아웃">${ic('out',18)}</button></div></header><main class="shell" id="view">${body}</main><nav class="bot">${tabs}</nav>`}
+ return `<header class="top ${S.viewAs?'pv':''}">${previewBar()}<div class="topin">${LOGO(34)}${WORD}${admin()?'<span class="role">관리자</span>':''}${admin()?`<button class="ib" data-a="viewAs" title="회원 화면으로 보기">${ic('user',18)}</button>`:''}<span class="sp"></span>${themeBtn()}<button class="ib" data-a="logout" title="로그아웃">${ic('out',18)}</button></div></header><main class="shell" id="view">${body}</main><nav class="bot">${tabs}</nav>`}
 A.go=d=>{S.tab=d.t;if(d.s)S.sub[d.t]=d.s;if(d.t!=='members'&&S.selMember&&!d.keep)S.selMember=null;window.scrollTo(0,0);render()};
 A.sub=d=>{S.sub[d.k]=d.v;render();renderModal()};
 const seg=(k,opts,def)=>{const cur=S.sub[k]||def||opts[0][0];return `<div class="seg">${opts.map(([v,l])=>`<button class="${cur===v?'on':''}" data-a="sub" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`};
@@ -262,13 +269,11 @@ A.wlDel=async({i,m:mid})=>{if(!await ask('이 기록을 삭제할까요?','','�
 // ---- 운동 사전 ----
 function libSec(adm){return `<div class="row nw"><input class="inp" placeholder="운동 이름 검색 (예: 랫풀다운)" data-f="libQ" data-live="lib" value="${esc(fv('libQ'))}">${adm?`<button class="btn pri" data-a="exNew">${ic('plus',16)}추가</button>`:''}</div>
  <div class="pills">${['전체',...EXCATS,'기타'].map(c=>`<button class="pill ${S.libCat===c?'on':''}" data-a="libCat" data-v="${c}">${c}</button>`).join('')}</div><div id="p-lib">${PART.lib()}</div>`}
-// 대표 그림: 트레이너가 올린 사진 → Core 해부학 일러스트(시작·마무리 자세, 쓰는 근육 빨간색) → 근육 지도
-const artC={};
-function exArtUrl(e,card){const k=e.id+(card?'_c':'');if(artC[k])return artC[k];if(typeof POSE==='undefined'||!POSE[e.id])return null;let svg=exArt(e.id,{p:e.p||[],s:e.s||[]});if(!svg)return null;
- if(card)svg=svg.replace(/viewBox="0 0 800 300"/,'viewBox="400 0 400 300"');try{artC[k]=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}))}catch(err){artC[k]='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}return artC[k]}
-function exPhoto(e,card){const L=S.exlib[e.id];if(L?.photo)return {u:fileUrl(L.photo),own:1};const a=exArtUrl(e,card);return a?{u:a,art:1}:null}
+// 대표 그림: 트레이너가 올린 사진 → Core 3D 해부학 애니메이션(시작↔마무리 반복, 쓰는 근육 빨간색) → 근육 지도
+const EXIMG=new Set(EX.map(e=>e.id));
+function exPhoto(e){const L=S.exlib[e.id];if(L?.photo)return {u:fileUrl(L.photo),own:1};if(EXIMG.has(e.id))return {u:'ex/'+e.id+'.webp?v='+(window.CORE_V||''),art:1};return null}
 const imgFail="this.closest('.exph').classList.add('noimg')";
-function exThumb(e,big){const p=exPhoto(e,!big);return `<div class="exph ${big?'big':''} ${p?'':'noimg'} ${p&&p.art?'art':''}">${p?`<img src="${esc(p.u)}" alt="${esc(e.n)} 그림" loading="lazy" onerror="${imgFail}">`:''}<div class="bmf">${bodyMap(e.p,e.s)}</div><span class="excat">${esc(e.cat)}</span></div>`}
+function exThumb(e,big){const p=exPhoto(e);return `<div class="exph ${big?'big':''} ${p?'':'noimg'} ${p&&p.art?'art':''}">${p?`<img src="${esc(p.u)}" alt="${esc(e.n)} 그림" loading="lazy" onerror="${imgFail}">`:''}<div class="bmf">${bodyMap(e.p,e.s)}</div><span class="excat">${esc(e.cat)}</span></div>`}
 PART.lib=()=>{const q=(S.f.libQ||'').trim().toLowerCase();const l=allEx().filter(e=>(S.libCat==='전체'||e.cat===S.libCat||(S.libCat==='기타'&&!EXCATS.includes(e.cat)))&&(!q||e.n.toLowerCase().includes(q)||(e.en||'').toLowerCase().includes(q)));
  return l.length?`<div class="lib">${l.map(e=>`<div class="exc" data-a="exOpen" data-id="${e.id}">${exThumb(e)}<div class="exb"><b>${esc(e.n)}</b><div class="xs muted">${esc(e.en||'')}</div><div class="xs pc b">${(e.p||[]).map(k=>MN[k]?.split('(')[0]).filter(Boolean).join(' · ')}</div>${S.exlib[e.id]?.notes||S.exlib[e.id]?.media?.length?'<span class="chip p xs">트레이너 자료</span>':''}</div></div>`).join('')}</div>`:'<p class="empty">찾는 운동이 없어요.</p>'};
 A.libCat=({v})=>{S.libCat=v;render()};
@@ -324,7 +329,7 @@ function exForm(e){return `<div><label class="fl">운동 이름</label><input cl
 A.exNew=({n})=>{clearF('ex_');if(n)S.f.ex_n=n;openModal(()=>`${mh('운동 추가')}${exForm({})}`)};
 A.exEdit=({id})=>{clearF('ex_');const e=allEx().find(x=>x.id===id);openModal(()=>`${mh('운동 수정')}${exForm(e)}`)};
 A.exAI=()=>busy('exai',async()=>{const n=(S.f.ex_n||'').trim();if(!n)throw new Error('운동 이름을 먼저 입력해주세요.');const r=await ai(`헬스 운동 "${n}"을 회원에게 해부학적으로 설명하라. 한국어, 간결하게. 근육 키는 다음 중에서만: ${MKEYS.join(', ')}
-JSON: {"cat":"가슴|등|어깨|팔|하체|코어|기타","eq":string,"p":[근육키],"s":[근육키],"a":"주동근·보조근이 어떤 관절 움직임으로 일하는지 2~3문장","u":"일상·스포츠에서 쓰이는 곳 1~2문장","st":[동작 순서 4~6개],"c":[주의사항 2~3개]}`,{tier:'quick'});
+JSON: {"cat":"${EXCATS.join('|')}|기타","eq":string,"p":[근육키],"s":[근육키],"a":"주동근·보조근이 어떤 관절 움직임으로 일하는지 2~3문장","u":"일상·스포츠에서 쓰이는 곳 1~2문장","st":[동작 순서 4~6개],"c":[주의사항 2~3개]}`,{tier:'quick'});
  Object.assign(S.f,{ex_cat:r.cat||'기타',ex_eq:r.eq||'',ex_a:r.a||'',ex_u:r.u||'',ex_st:(r.st||[]).join('\n'),ex_c:(r.c||[]).join('\n')});MKEYS.forEach(k=>{S.f['ex_p_'+k]=(r.p||[]).includes(k);S.f['ex_s_'+k]=(r.s||[]).includes(k)})});
 A.exSave=async({id})=>{const n=(S.f.ex_n||'').trim();if(!n)return toast('운동 이름을 입력해주세요');const e=id?allEx().find(x=>x.id===id):{};const g=(k,d)=>fv(k,d);const lines=s=>String(s||'').split('\n').map(x=>x.trim()).filter(Boolean);const nid=id||'c_'+uid();
  await put('exlib',nid,{...exDoc(nid),custom:true,n,cat:g('ex_cat',e.cat||'기타'),eq:g('ex_eq',e.eq||''),p:MKEYS.filter(k=>g('ex_p_'+k,(e.p||[]).includes(k))),s:MKEYS.filter(k=>g('ex_s_'+k,(e.s||[]).includes(k))),a:g('ex_a',e.a||''),u:g('ex_u',e.u||''),st:lines(g('ex_st',(e.st||[]).join('\n'))),c:lines(g('ex_c',(e.c||[]).join('\n')))});clearF('ex_');toast('운동 사전에 저장했어요');closeModal()};
