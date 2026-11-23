@@ -263,9 +263,9 @@ A.memSave=async({id})=>{const m=S.members[id];const g=(k,d)=>fv('ed_'+k,d??'');c
 A.memDel=async({id})=>{const m=S.members[id];if(!await ask(`${m.name} 회원을 삭제할까요?`,'계정이 삭제되어 로그인할 수 없게 돼요.','삭제',true))return;await act('admin/member/delete',{id});C('members').delete(id);derive();S.selMember=null;render()};
 // ---- 예약 관리 ----
 function vABook(){const sel=S.abDate||today();const cnt=dt=>S.bookings.filter(b=>b.date===dt).length;const up=S.bookings.filter(b=>b.status==='booked'&&slotDT(b.date,b.time)>new Date()).sort(byDT).slice(0,15);
- return `<h1>예약 관리</h1><button class="btn grad full" data-a="wkOpen" style="margin-bottom:12px">${ic('cal',17)} 회원 다음주 일정 한 번에 예약</button><div class="card">${calHTML('abDate',sel,dt=>{const c=cnt(dt);return c?`<span class="cnt">${c}건</span>`:dayClosed(dt)?'<span class="cnt" style="color:var(--hot)">휴무</span>':'<span class="mk"></span>'})}</div>
+ const cs=calS();return `<h1>예약 관리</h1>${(cs.removed||[]).length||cs.ok===false?`<div class="note w tap" data-a="goCal" style="margin-bottom:10px">📅 ${cs.ok===false?'캘린더를 읽지 못했어요':`캘린더에서 지워진 일정 ${cs.removed.length}건 — 예약을 취소할지 확인해주세요`} ›</div>`:''}<button class="btn grad full" data-a="wkOpen" style="margin-bottom:12px">${ic('cal',17)} 회원 다음주 일정 한 번에 예약</button><div class="card">${calHTML('abDate',sel,dt=>{const c=cnt(dt);return c?`<span class="cnt">${c}건</span>`:dayClosed(dt)?'<span class="cnt" style="color:var(--hot)">휴무</span>':'<span class="mk"></span>'})}</div>
  <div class="card"><div class="row sb"><h3>${fmtD(sel)}</h3><button class="btn sm ${S.blocks[sel+'_all']?'pri':'ghost'}" data-a="blockDay" data-d="${sel}">${S.blocks[sel+'_all']?'휴무 해제':'이 날 휴무'}</button></div>
- ${slotsFor().map(t=>{const id=sid(sel,t);const b=S.bookingMap[id];if(b)return adminBk(b);const blk=S.blocks[id]||dayClosed(sel);const past=slotDT(sel,t)<new Date();return `<div class="bk" style="opacity:${blk||past?.5:1}"><div class="t num">${t}</div><div class="grow"><span class="sm muted">${blk?'예약 불가':past?'지남':'비어 있음'}</span></div>${S.blocks[sel+'_all']||past?'':`<button class="btn sm ghost" data-a="blockSlot" data-id="${id}" data-d="${sel}" data-t="${t}">${S.blocks[id]?'열기':'막기'}</button>`}${blk||past?'':`<button class="btn sm soft" data-a="abAdd" data-d="${sel}" data-t="${t}">${ic('plus',14)}</button>`}</div>`}).join('<div style="height:6px"></div>')}</div>
+ ${[...new Set([...slotsFor(),...S.bookings.filter(b=>b.date===sel).map(b=>b.time)])].sort().map(t=>{const id=sid(sel,t);const b=S.bookingMap[id];if(b)return adminBk(b);const blk=S.blocks[id]||dayClosed(sel);const past=slotDT(sel,t)<new Date();return `<div class="bk" style="opacity:${blk||past?.5:1}"><div class="t num">${t}</div><div class="grow"><span class="sm muted">${blk?'예약 불가':past?'지남':'비어 있음'}</span></div>${S.blocks[sel+'_all']||past?'':`<button class="btn sm ghost" data-a="blockSlot" data-id="${id}" data-d="${sel}" data-t="${t}">${S.blocks[id]?'열기':'막기'}</button>`}${blk||past?'':`<button class="btn sm soft" data-a="abAdd" data-d="${sel}" data-t="${t}">${ic('plus',14)}</button>`}</div>`}).join('<div style="height:6px"></div>')}</div>
  <div class="card"><h3>다가오는 예약</h3>${up.length?`<div class="list">${up.map(b=>`<div class="li tap" data-a="abDate" data-d="${b.date}"><span class="num b" style="width:96px">${b.date.slice(5)} ${b.time}</span><span class="grow">${esc(nm(b.memberId))}</span><span class="tag ${b.type==='consult'?'c':''}">${typeName(b.type)}</span></div>`).join('')}</div>`:'<p class="empty">다가오는 예약이 없어요.</p>'}</div>
  <div class="card"><h3>📅 내 캘린더와 연동</h3><p class="sm muted">모든 예약·변경·취소가 구글/아이폰/네이버 캘린더에 자동 반영돼요.</p>${icsBox(S.settings.icsToken)}</div>`}
 A.abDate=({d})=>{S.abDate=d;const x=parseD(d);S.cal={y:x.getFullYear(),m:x.getMonth()};render()};
@@ -312,7 +312,7 @@ A.ntSave=async()=>{const t=(S.f.nt_title||'').trim();if(!t)return toast('제목�
 A.ntEdit=({id})=>{const n=S.notices.find(x=>x.id===id);Object.assign(S.f,{nt_edit:id,nt_title:n.title,nt_body:n.body,nt_pin:!!n.pinned});window.scrollTo(0,0);render()};
 A.ntCancel=()=>{clearF('nt_');render()};A.ntDel=async({id})=>{if(!await ask('공지를 삭제할까요?','','삭제',true))return;await delDoc('notices',id)};
 // ---- 설정 ----
-function vASettings(){const st=S.settings;const a=me();return `<h1>설정</h1>${pushCard()}
+function vASettings(){const st=S.settings;const a=me();return `<h1>설정</h1>${pushCard()}${calCard()}
  <div class="card"><h3>🔑 전용코드 변경</h3><p class="xs muted">보안을 위해 현재 코드는 표시되지 않아요. 바꾸면 즉시 적용되고, 이미 로그인한 사람은 그대로 유지돼요.</p>
  <div class="row nw"><input class="inp" placeholder="새 회원 전용코드" data-f="cd_m" value="${esc(fv('cd_m'))}" autocapitalize="off"><button class="btn pri" data-a="codeSave" data-k="m">변경</button></div>
  <div class="row nw"><input class="inp" placeholder="새 관리자 전용코드" data-f="cd_a" value="${esc(fv('cd_a'))}" autocapitalize="off"><button class="btn pri" data-a="codeSave" data-k="a">변경</button></div>${st.codeAt?`<div class="xs muted">마지막 변경 ${ago(st.codeAt)}</div>`:''}</div>
@@ -391,3 +391,23 @@ A.wkSave=()=>busy('wks',async()=>{const W=S.wk;const ok=[],bad=[];
  for(const k of W.sel){const [date,time]=k.split('|');try{await api('POST','/api/book',{memberId:W.mem,date,time,type:W.type});ok.push(k)}catch(e){bad.push(`${fmtD(date)} ${time}: ${e.message}`)}}
  await sync();render();S.wk.sel=W.sel.filter(k=>!ok.includes(k));
  if(!bad.length){closeModal();toast(`${nm(W.mem)}님 ${ok.length}건 예약했어요`)}else{renderModal();await ask(`${ok.length}건 예약, ${bad.length}건 실패`,bad.join('\n'),'확인')}});
+// ---- 캘린더 자동 예약 (관리자) ----
+const calS=()=>C('calsync').get('main')||{};
+function calCard(){const c=calS();const on=c.connected;const ago2=c.at?ago(c.at):'';
+ return `<div class="card col" id="calcard"><div class="row sb"><h3>📅 캘린더로 자동 예약</h3>${on?`<span class="chip ${c.ok===false?'r':'g'} xs">${c.ok===false?'확인 필요':'연결됨'}</span>`:''}</div>
+ <p class="sm muted">평소 쓰는 캘린더에 <b>"PT 홍길동"</b>, <b>"그룹 PT 김명숙/김은서"</b>처럼 적으면 10분 안에 그 회원 예약이 자동으로 잡혀요. 앱에 등록되지 않은 이름은 넣지 않아요.</p>
+ ${on?`<div class="sm">연결된 캘린더: <b>${esc(c.hint||'')}</b>${ago2?` · 마지막 확인 ${ago2}`:''}</div>
+  ${c.ok===false?`<div class="err">${esc(c.err||'')}</div>`:c.at?`<div class="xs muted">다가오는 PT 일정 ${c.events||0}개 · 새로 예약 ${c.added||0} · 시간 변경 ${c.moved||0} · 앱 미등록 이름 ${c.skipped||0}개 건너뜀</div>`:''}
+  ${(c.removed||[]).length?`<div class="note w"><b>캘린더에서 지워진 일정이 있어요</b><br>예약은 그대로 두었어요. 취소할지 정해주세요.</div>${c.removed.map(r=>`<div class="bk"><div class="t num">${r.date.slice(5).replace('-','/')}<br>${r.time}</div><div class="grow sm b">${esc(r.name)}</div><button class="btn sm ghost dng" data-a="calCancel" data-h="${r.hid}" ${dis('cc'+r.hid)}>예약 취소</button><button class="btn sm soft" data-a="calKeep" data-h="${r.hid}">유지</button></div>`).join('')}`:''}
+  ${(c.issues||[]).length?`<details><summary class="sm b" style="color:var(--hot)">확인이 필요한 일정 ${c.issues.length}개</summary>${c.issues.map(i=>`<div class="sm" style="margin-top:6px">• ${i.date.slice(5).replace('-','/')} ${i.time} "${esc(i.title)}" — ${esc(i.msg)}</div>`).join('')}</details>`:''}
+  <div class="row nw"><button class="btn pri" style="flex:1" data-a="calRun" ${dis('calr')}>${bz('calr',ic('refresh',15)+' 지금 확인','확인 중…')}</button><button class="btn ghost" data-a="calEdit">링크 변경</button><button class="btn ghost dng" data-a="calOff">끊기</button></div>`:''}
+ ${!on||S.f.cal_edit?`<input class="inp" placeholder="webcal://p00-caldav.icloud.com/published/…" data-f="cal_url" value="${esc(fv('cal_url'))}" autocapitalize="off" autocorrect="off"><button class="btn grad full" data-a="calSave" ${dis('cals')}>${bz('cals','연결하고 바로 확인','연결 중…')}</button>
+  <details ${on?'':'open'}><summary class="sm b">공개 링크 복사하는 법 (iCloud '중요일정')</summary><div class="sm" style="line-height:1.7;margin-top:6px">① 아이폰 기본 <b>캘린더</b> 앱 실행<br>② 아래쪽 <b>캘린더</b> 버튼 → <b>중요일정</b> 옆 <b>ⓘ</b><br>③ 맨 아래 <b>공개 캘린더</b> 켜기<br>④ 나타난 <b>링크 공유…</b> → <b>복사</b><br>⑤ 여기 칸에 붙여넣고 '연결하고 바로 확인'<br><span class="xs muted">링크를 아는 사람은 이 캘린더 일정을 볼 수 있으니 다른 곳에 공유하지 마세요.</span></div></details>`:''}
+ </div>`}
+A.calEdit=()=>{S.f.cal_edit=1;render()};
+A.calSave=()=>busy('cals',async()=>{const u=(S.f.cal_url||'').trim();if(!u)return toast('캘린더 공개 링크를 붙여넣어 주세요');try{const r=await act('admin/cal',{url:u});delete S.f.cal_url;delete S.f.cal_edit;toast(`연결했어요 · 새 예약 ${r.added||0}건`)}catch(e){await sync();render();toast(e.message)}});
+A.calRun=()=>busy('calr',async()=>{try{const r=await act('admin/cal',{});toast(r.added||r.moved?`새 예약 ${r.added}건 · 변경 ${r.moved}건`:'새로 바뀐 일정이 없어요')}catch(e){await sync();render();toast(e.message)}});
+A.calOff=async()=>{if(!await ask('캘린더 연결을 끊을까요?','이미 잡힌 예약은 그대로 남아요.','끊기',true))return;await act('admin/cal',{off:true});toast('연결을 끊었어요')};
+A.calKeep=async({h})=>{await act('admin/cal',{keep:h});toast('예약을 유지했어요')};
+A.calCancel=({h})=>busy('cc'+h,async()=>{await act('admin/cal',{cancel:h});toast('예약을 취소했어요')});
+A.goCal=()=>{S.tab='settings';render();setTimeout(()=>document.getElementById('calcard')?.scrollIntoView({behavior:'smooth'}),80)};
