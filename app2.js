@@ -254,7 +254,7 @@ function memInfo(m){const i=(k,l,v,t='text')=>`<div><label class="fl">${l}</labe
  <div class="xs muted">마지막 로그인 ${m.lastLogin?ago(m.lastLogin):'없음'}</div></div>
  <button class="btn ghost dng full" data-a="memDel" data-id="${m.id}">회원 삭제</button>`}
 function memBookings(mid){const l=S.bookings.filter(b=>b.memberId===mid).sort(byDT).reverse();const acts=S.activity.filter(a=>a.memberId===mid).slice(0,25);
- return `<button class="btn grad full" data-a="abAdd" data-mem="${mid}">${ic('plus',16)} 이 회원 예약 추가</button><div class="card"><h3>예약 내역</h3>${l.length?l.map(b=>adminBk(b)).join('<div style="height:8px"></div>'):'<p class="empty">예약이 없어요.</p>'}</div>${acts.length?`<div class="card"><h3>업데이트 내역</h3><div class="list">${acts.map(a=>`<div class="act"><div class="e">${AICON[a.kind]||'•'}</div><div class="grow"><div class="sm">${esc(a.text)}</div><div class="xs muted">${ago(a.at)}</div></div></div>`).join('')}</div></div>`:''}`}
+ return `<div class="row nw"><button class="btn grad" style="flex:1" data-a="wkOpen" data-mem="${mid}">${ic('cal',16)} 주간 일정 한 번에</button><button class="btn soft" style="flex:1" data-a="abAdd" data-mem="${mid}">${ic('plus',16)} 1건 추가</button></div><div class="card"><h3>예약 내역</h3>${l.length?l.map(b=>adminBk(b)).join('<div style="height:8px"></div>'):'<p class="empty">예약이 없어요.</p>'}</div>${acts.length?`<div class="card"><h3>업데이트 내역</h3><div class="list">${acts.map(a=>`<div class="act"><div class="e">${AICON[a.kind]||'•'}</div><div class="grow"><div class="sm">${esc(a.text)}</div><div class="xs muted">${ago(a.at)}</div></div></div>`).join('')}</div></div>`:''}`}
 A.usedAdj=async({id,v})=>{await act('admin/member',{id,usedDelta:+v})};
 A.reReg=async({id})=>{const n=parseInt(S.f.ed_add);if(!n||n<1)return toast('추가할 회차를 입력해주세요');await act('admin/member',{id,addSessions:n});delete S.f.ed_add;toast(`${n}회 추가했어요`)};
 A.aiReset=async({id})=>{const m=S.members[id];if(!await ask(`${m.name}님의 AI 생성 횟수를 다시 3회로 채울까요?`,'','다시 채우기'))return;await act('admin/member',{id,resetAi:true});toast('AI 생성 횟수를 다시 채웠어요')};
@@ -263,7 +263,7 @@ A.memSave=async({id})=>{const m=S.members[id];const g=(k,d)=>fv('ed_'+k,d??'');c
 A.memDel=async({id})=>{const m=S.members[id];if(!await ask(`${m.name} 회원을 삭제할까요?`,'계정이 삭제되어 로그인할 수 없게 돼요.','삭제',true))return;await act('admin/member/delete',{id});C('members').delete(id);derive();S.selMember=null;render()};
 // ---- 예약 관리 ----
 function vABook(){const sel=S.abDate||today();const cnt=dt=>S.bookings.filter(b=>b.date===dt).length;const up=S.bookings.filter(b=>b.status==='booked'&&slotDT(b.date,b.time)>new Date()).sort(byDT).slice(0,15);
- return `<h1>예약 관리</h1><div class="card">${calHTML('abDate',sel,dt=>{const c=cnt(dt);return c?`<span class="cnt">${c}건</span>`:dayClosed(dt)?'<span class="cnt" style="color:var(--hot)">휴무</span>':'<span class="mk"></span>'})}</div>
+ return `<h1>예약 관리</h1><button class="btn grad full" data-a="wkOpen" style="margin-bottom:12px">${ic('cal',17)} 회원 다음주 일정 한 번에 예약</button><div class="card">${calHTML('abDate',sel,dt=>{const c=cnt(dt);return c?`<span class="cnt">${c}건</span>`:dayClosed(dt)?'<span class="cnt" style="color:var(--hot)">휴무</span>':'<span class="mk"></span>'})}</div>
  <div class="card"><div class="row sb"><h3>${fmtD(sel)}</h3><button class="btn sm ${S.blocks[sel+'_all']?'pri':'ghost'}" data-a="blockDay" data-d="${sel}">${S.blocks[sel+'_all']?'휴무 해제':'이 날 휴무'}</button></div>
  ${slotsFor().map(t=>{const id=sid(sel,t);const b=S.bookingMap[id];if(b)return adminBk(b);const blk=S.blocks[id]||dayClosed(sel);const past=slotDT(sel,t)<new Date();return `<div class="bk" style="opacity:${blk||past?.5:1}"><div class="t num">${t}</div><div class="grow"><span class="sm muted">${blk?'예약 불가':past?'지남':'비어 있음'}</span></div>${S.blocks[sel+'_all']||past?'':`<button class="btn sm ghost" data-a="blockSlot" data-id="${id}" data-d="${sel}" data-t="${t}">${S.blocks[id]?'열기':'막기'}</button>`}${blk||past?'':`<button class="btn sm soft" data-a="abAdd" data-d="${sel}" data-t="${t}">${ic('plus',14)}</button>`}</div>`}).join('<div style="height:6px"></div>')}</div>
  <div class="card"><h3>다가오는 예약</h3>${up.length?`<div class="list">${up.map(b=>`<div class="li tap" data-a="abDate" data-d="${b.date}"><span class="num b" style="width:96px">${b.date.slice(5)} ${b.time}</span><span class="grow">${esc(nm(b.memberId))}</span><span class="tag ${b.type==='consult'?'c':''}">${typeName(b.type)}</span></div>`).join('')}</div>`:'<p class="empty">다가오는 예약이 없어요.</p>'}</div>
@@ -361,3 +361,33 @@ async function boot(){applyTheme();S.boot=true;render();try{const st=await api('
  const s=ls.get('core_ses');if(s&&S.user&&s.date===today()&&s.mid===S.user.id){S.ses=s;openModal(()=>sesView(),true)}}
 boot();
 document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const f=e.target.dataset&&e.target.dataset.f;if(f==='yt_q'){e.preventDefault();e.target.blur();A.ytSearch()}else if(f==='yt_in'){e.preventDefault();e.target.blur();A.ytInSearch()}});
+// ---- 주간 일정 한 번에 예약 (관리자) ----
+const monOf=s=>{const d=parseD(s);return addDays(s,-((d.getDay()+6)%7))};
+A.wkOpen=({mem})=>{S.wk={mem:mem||'',start:addDays(monOf(today()),7),sel:[],type:'lesson'};openModal(wkModal)};
+function wkModal(){const W=S.wk;const ms=members().filter(m=>mstate(m)==='active').sort((a,b)=>a.name.localeCompare(b.name));const m=W.mem&&S.members[W.mem];
+ const days=[...Array(7)].map((_,i)=>addDays(W.start,i));const now=new Date();
+ const fut=m?S.bookings.filter(b=>b.memberId===m.id&&b.status==='booked'&&b.type==='lesson'&&slotDT(b.date,b.time)>now).length:0;const left=m?remaining(m)-fut:0;
+ const lessons=W.type==='lesson'?W.sel.length:0;
+ const prev=m?S.bookings.filter(b=>b.memberId===m.id&&b.date>=addDays(W.start,-7)&&b.date<W.start&&b.status!=='noshow'):[];
+ return `${mh('주간 일정 한 번에 예약')}
+ <div><label class="fl">회원</label><select class="inp" data-f="wk_mem" onchange="A.wkMem({v:this.value})"><option value="">회원 선택</option>${ms.map(x=>`<option value="${x.id}" ${W.mem===x.id?'selected':''}>${esc(x.name)} (잔여 ${remaining(x)}회)</option>`).join('')}</select></div>
+ <div class="row sb nw"><button class="ib" data-a="wkWeek" data-v="-7">${ic('left',18)}</button><b>${fmtD(days[0]).replace(/ \(.\)/,'')} ~ ${fmtD(days[6]).replace(/ \(.\)/,'')}</b><button class="ib" data-a="wkWeek" data-v="7">${ic('right',18)}</button></div>
+ <div class="seg"><button class="${W.type==='lesson'?'on':''}" data-a="wkType" data-v="lesson">PT 수업</button><button class="${W.type==='consult'?'on':''}" data-a="wkType" data-v="consult">PT 상담</button></div>
+ ${m&&prev.length?`<button class="btn soft full" data-a="wkCopy">${ic('refresh',15)} 지난주와 같은 요일·시간으로 (${prev.map(b=>'일월화수목금토'[parseD(b.date).getDay()]+' '+b.time).join(', ')})</button>`:''}
+ ${m?'':'<p class="sm muted">회원을 먼저 선택해주세요.</p>'}
+ <div class="col wkdays" style="gap:10px;${m?'':'opacity:.4;pointer-events:none'}">${days.map(dt=>{const closed=dayClosed(dt);const sl=slotsFor();
+  return `<div><div class="xs b" style="margin-bottom:5px">${fmtD(dt)}${closed?' <span style="color:var(--hot)">휴무</span>':''}</div>${closed?'':`<div class="wkts">${sl.map(t=>{const id=sid(dt,t);const b=S.bookingMap[id];const k=dt+'|'+t;const on=W.sel.includes(k);const mine=b&&b.memberId===W.mem;const dis=(!!b&&b.status!=='cancel')||S.blocks[id]||slotDT(dt,t)<now;
+   return `<button class="wkt ${on?'on':''} ${mine?'mine':''}" ${dis?'disabled':''} data-a="wkTog" data-k="${k}" title="${b?esc(nm(b.memberId)):''}">${t}${mine?' ✓':b?'<small>'+esc(nm(b.memberId)).slice(0,3)+'</small>':''}</button>`}).join('')}</div>`}</div>`}).join('')}</div>
+ ${m?`<p class="xs muted">✓ 표시는 이미 잡힌 이 회원 예약, 회색은 다른 회원 예약이나 막힌 시간이에요. 남은 예약 가능 수업: <b>${left}회</b>${lessons>left?` <span style="color:var(--hot)">· 선택한 수업이 잔여보다 많아요</span>`:''}</p>`:''}
+ <button class="btn grad full wksave" data-a="wkSave" ${!m||!W.sel.length?'disabled':''} ${dis('wks')}>${bz('wks',`${W.sel.length?W.sel.length+'건 ':''}예약하기`,'예약하는 중…')}</button>`}
+A.wkMem=({v})=>{S.wk.mem=v;S.wk.sel=[];renderModal()};
+A.wkWeek=({v})=>{S.wk.start=addDays(S.wk.start,+v);S.wk.sel=[];renderModal()};
+A.wkType=({v})=>{S.wk.type=v;renderModal()};
+A.wkTog=({k})=>{const s=S.wk.sel;S.wk.sel=s.includes(k)?s.filter(x=>x!==k):[...s,k].sort();renderModal()};
+A.wkCopy=()=>{const W=S.wk;const now=new Date();const prev=S.bookings.filter(b=>b.memberId===W.mem&&b.date>=addDays(W.start,-7)&&b.date<W.start&&b.status!=='noshow');const add=[];
+ for(const b of prev){const dt=addDays(b.date,7);const id=sid(dt,b.time);if(!S.bookingMap[id]&&!S.blocks[id]&&!dayClosed(dt)&&slotDT(dt,b.time)>now)add.push(dt+'|'+b.time)}
+ S.wk.sel=[...new Set([...W.sel,...add])].sort();if(add.length<prev.length)toast(`${prev.length-add.length}건은 이미 찼거나 막힌 시간이라 빼고 골랐어요`);renderModal()};
+A.wkSave=()=>busy('wks',async()=>{const W=S.wk;const ok=[],bad=[];
+ for(const k of W.sel){const [date,time]=k.split('|');try{await api('POST','/api/book',{memberId:W.mem,date,time,type:W.type});ok.push(k)}catch(e){bad.push(`${fmtD(date)} ${time}: ${e.message}`)}}
+ await sync();render();S.wk.sel=W.sel.filter(k=>!ok.includes(k));
+ if(!bad.length){closeModal();toast(`${nm(W.mem)}님 ${ok.length}건 예약했어요`)}else{renderModal();await ask(`${ok.length}건 예약, ${bad.length}건 실패`,bad.join('\n'),'확인')}});
