@@ -209,3 +209,7 @@ u.term{text-decoration:none;border-bottom:2px dotted var(--pri);font-weight:700}
 .artfull{width:100%;display:block;border-radius:12px}
 .top.pv .topin{padding-top:8px}.pvbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top) + 8px) 14px 8px;background:linear-gradient(90deg,#4F5BFF,#8B5CFF);color:#fff;font-size:13px}
 .pvbar .btn{padding:6px 10px}
+.vabtn{display:inline-flex;align-items:center;gap:5px;border:0;border-radius:99px;padding:8px 12px;font:inherit;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(135deg,#4F5BFF,#8B5CFF);box-shadow:0 4px 14px rgba(79,91,255,.3);cursor:pointer;white-space:nowrap}
+.vacard{display:flex;align-items:center;gap:12px;width:100%;border:0;border-radius:20px;padding:14px 16px;margin-bottom:12px;font:inherit;color:var(--tx);background:var(--card);box-shadow:var(--sh);cursor:pointer}
+.vacard b{display:block;font-size:15px}.vacard .xs{color:var(--mu)}.vaic{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;font-size:20px;background:linear-gradient(135deg,#E8EAFF,#F3E8FF)}
+.topin .role{white-space:nowrap}
