@@ -117,7 +117,7 @@ A.logout=async()=>{if(!await ask('로그아웃할까요?','','로그아웃'))ret
 const setTok=r=>{TOK=r.token||'';ls.set('core_tok',TOK)};
 
 // ================= 진입 =================
-function render(){const app=$('#app');let h;if(S.boot)h=vSplash();else if(S.needSetup)h=vSetup();else if(!S.user)h=vLogin();else h=admin()?vAdmin():vMember();app.innerHTML=h}
+function render(){const app=$('#app');const keep=[...app.querySelectorAll('.pills,.seg')].map(e=>e.scrollLeft);let h;if(S.boot)h=vSplash();else if(S.needSetup)h=vSetup();else if(!S.user)h=vLogin();else h=admin()?vAdmin():vMember();app.innerHTML=h;if(keep.some(x=>x))app.querySelectorAll('.pills,.seg').forEach((e,i)=>{if(keep[i])e.scrollLeft=keep[i]})}
 const vSplash=()=>`<div class="splash"><div class="col" style="align-items:center"><div class="pulse">${LOGO(76)}</div>${WORD}</div></div>`;
 function vSetup(){const i=(k,l,t='text',ph='')=>`<div><label class="fl">${l}</label><input class="inp" type="${t}" data-f="${k}" value="${esc(fv(k))}" placeholder="${ph}" autocomplete="off" autocapitalize="off"></div>`;
  return `<div class="auth"><div class="brand">${LOGO(80)}${WORD}<p class="muted">처음 오셨네요! 관리자 계정과 전용코드를 만들어주세요.</p></div><div class="card col">
@@ -278,7 +278,7 @@ const imgFail="this.closest('.exph').classList.add('noimg')";
 function exThumb(e,big){const p=exPhoto(e);return `<div class="exph ${big?'big':''} ${p?'':'noimg'} ${p&&p.art?'art':''}">${p?(p.sprite?`<div class="spr" style="${sprStyle(p.u,p.sprite)}"></div>`:`<img src="${esc(p.u)}" alt="${esc(e.n)} 그림" loading="lazy" onerror="${imgFail}">`):''}<div class="bmf">${bodyMap(e.p,e.s)}</div><span class="excat">${esc(e.cat)}</span></div>`}
 PART.lib=()=>{const q=(S.f.libQ||'').trim().toLowerCase();const l=allEx().filter(e=>(S.libCat==='전체'||e.cat===S.libCat||(S.libCat==='기타'&&!EXCATS.includes(e.cat)))&&(!q||e.n.toLowerCase().includes(q)||(e.en||'').toLowerCase().includes(q)));
  return l.length?`<div class="lib">${l.map(e=>`<div class="exc" data-a="exOpen" data-id="${e.id}">${exThumb(e)}<div class="exb"><b>${esc(e.n)}</b><div class="xs muted">${esc(e.en||'')}</div><div class="xs pc b">${(e.p||[]).map(k=>MN[k]?.split('(')[0]).filter(Boolean).join(' · ')}</div>${S.exlib[e.id]?.notes||S.exlib[e.id]?.media?.length?'<span class="chip p xs">트레이너 자료</span>':''}</div></div>`).join('')}</div>`:'<p class="empty">찾는 운동이 없어요.</p>'};
-A.libCat=({v})=>{S.libCat=v;render()};
+A.libCat=({v},el)=>{S.libCat=v;const row=el.closest('.pills');if(row&&$('#p-lib')){row.querySelectorAll('.pill').forEach(b=>b.classList.toggle('on',b.dataset.v===v));$('#p-lib').innerHTML=PART.lib();el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'})}else render()};
 A.exOpen=({id,n})=>{const e=id?allEx().find(x=>x.id===id):findEx(n);if(!e){openModal(()=>`${mh(esc(n))}<p class="muted">운동 사전에 아직 없는 운동이에요.</p><a class="btn full" href="https://www.youtube.com/results?search_query=${encodeURIComponent(n+' 운동 방법')}" target="_blank" rel="noopener">${ic('play',16)} 유튜브에서 방법 보기</a>${admin()?`<button class="btn pri full" data-a="exNew" data-n="${esc(n)}">운동 사전에 추가</button>`:''}`);return}
  S.exTab='how';const f=()=>exDetail(allEx().find(x=>x.id===e.id)||e);f.live=true;openModal(f);loadWiki(e)};
 async function loadWiki(e){const ks=[...new Set([...(e.p||[]),...(e.s||[])])];const m={};S.wikiFor={id:e.id,m,done:false};for(const k of ks){if(!WIKI_M[k])continue;const r=await wiki(WIKI_M[k]);if(r)m[k]=r;if(S.modal)renderModal()}S.wikiFor.done=true;if(S.modal)renderModal()}
