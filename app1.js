@@ -351,21 +351,20 @@ function restoreNav(){if(S._navDone)return;S._navDone=1;const n=NAV0;if(!n||!S.u
 {const _r0=render;render=function(){_r0();saveNav()}}
 A.goHome=()=>{if(S.modal)closeModal();S.tab='home';S.selMember=null;window.scrollTo(0,0);render()};
 // ---- 제스처: 위→아래 길게 당겨 새로고침 / 좌우로 밀어 탭 이동 ----
-(()=>{let sx=0,sy=0,st=0,mode='',pull=0,el=null;const TH=120;
+(()=>{let sx=0,sy=0,mode='',pull=0,el=null,tgt=null,done=false;const TH=120,SW=60;
  const ptr=()=>{if(!el){el=document.createElement('div');el.className='ptr';el.innerHTML=ic('refresh',20);document.body.appendChild(el)}return el};
- const noSwipe=t=>!!t.closest('.pills,.seg,.wkts,.mo,#modal .card,#dlg,input,textarea,select,iframe,.vth,.pager,.spr,[data-noswipe]');
- const blocked=()=>S.modal||!S.user||S.boot||document.querySelector('#dlg .mo, #dlg > *');
- document.addEventListener('touchstart',e=>{if(e.touches.length!==1||blocked()){mode='x';return}const t=e.touches[0];sx=t.clientX;sy=t.clientY;st=Date.now();pull=0;
-  mode=(sx<22||sx>innerWidth-22)?'x':'';e._t=e.target;S._swT=e.target},{passive:true});
- document.addEventListener('touchmove',e=>{if(mode==='x'||e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-sx,dy=t.clientY-sy;
-  if(!mode){if(Math.abs(dx)<10&&Math.abs(dy)<10)return;
-   if(dy>0&&dy>Math.abs(dx)*1.6&&(window.scrollY||document.documentElement.scrollTop)<=0)mode='pull';
-   else if(Math.abs(dx)>Math.abs(dy)*1.6&&!noSwipe(S._swT))mode='swipe';else{mode='x';return}}
-  if(mode==='pull'){if(Math.abs(dx)>dy*0.7){mode='x';ptr().style.opacity=0;return}pull=dy;const p=ptr(),k=Math.min(1,dy/TH);p.style.opacity=k;p.style.transform=`translate(-50%,${Math.min(dy*0.45,70)}px) rotate(${dy*2}deg)`;p.classList.toggle('ready',dy>=TH)}
+ const noSwipe=t=>!!(t&&t.closest&&t.closest('.pills,.seg,.wkts,input,textarea,select,iframe,.pager,[data-noswipe]'));
+ const blocked=()=>!!(S.modal||!S.user||S.boot||($('#dlg')&&$('#dlg').children.length));
+ const goTab=dir=>{const ks=[...document.querySelectorAll('nav.bot [data-t]')].map(b=>b.dataset.t);const i=ks.indexOf(S.tab);const j=i+dir;if(i<0||j<0||j>=ks.length)return;
+  A.go({t:ks[j]});const v=$('#view');if(v){v.classList.remove('swl','swr');void v.offsetWidth;v.classList.add(dir>0?'swl':'swr')}};
+ const end=()=>{if(mode==='pull'){const p=ptr();if(pull>=TH){p.classList.add('spin');setTimeout(hardReload,150)}else{p.style.opacity=0;p.style.transform='translate(-50%,0)'}}mode='';pull=0};
+ document.addEventListener('touchstart',e=>{done=false;if(e.touches.length!==1||blocked()){mode='x';return}const t=e.touches[0];sx=t.clientX;sy=t.clientY;tgt=e.target;pull=0;mode=(sx<16||sx>innerWidth-16)?'x':''},{passive:true});
+ document.addEventListener('touchmove',e=>{if(mode==='x'||done||e.touches.length!==1)return;const t=e.touches[0],dx=t.clientX-sx,dy=t.clientY-sy;
+  if(!mode){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;
+   if(dy>0&&dy>Math.abs(dx)*1.5&&(window.scrollY||document.documentElement.scrollTop||0)<=0)mode='pull';
+   else if(Math.abs(dx)>Math.abs(dy)*1.2&&!noSwipe(tgt))mode='swipe';else{mode='x';return}}
+  if(mode==='pull'){if(Math.abs(dx)>dy*0.7){mode='x';ptr().style.opacity=0;return}pull=dy;const p=ptr();p.style.opacity=Math.min(1,dy/TH);p.style.transform=`translate(-50%,${Math.min(dy*0.45,70)}px) rotate(${dy*2}deg)`;p.classList.toggle('ready',dy>=TH)}
+  else if(mode==='swipe'&&Math.abs(dx)>=SW&&Math.abs(dx)>Math.abs(dy)*1.2){done=true;mode='x';goTab(dx<0?1:-1)}
  },{passive:true});
- document.addEventListener('touchend',e=>{const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy,dt=Date.now()-st;
-  if(mode==='pull'){const p=ptr();if(pull>=TH){p.classList.add('spin');p.style.transform='translate(-50%,40px)';setTimeout(hardReload,150)}else{p.style.opacity=0;p.style.transform='translate(-50%,0)'}}
-  else if(mode==='swipe'&&Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.6&&dt<700){const ks=[...document.querySelectorAll('nav.bot [data-t]')].map(b=>b.dataset.t);const i=ks.indexOf(S.tab);const j=i+(dx<0?1:-1);
-   if(i>=0&&j>=0&&j<ks.length){const v=$('#view');A.go({t:ks[j]});const v2=$('#view');if(v2){v2.classList.remove('swl','swr');void v2.offsetWidth;v2.classList.add(dx<0?'swl':'swr')}}}
-  mode='';pull=0},{passive:true});
+ document.addEventListener('touchend',end,{passive:true});document.addEventListener('touchcancel',end,{passive:true});
 })();
