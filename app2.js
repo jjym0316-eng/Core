@@ -277,7 +277,7 @@ A.ntSave=async()=>{const t=(S.f.nt_title||'').trim();if(!t)return toast('제목�
 A.ntEdit=({id})=>{const n=S.notices.find(x=>x.id===id);Object.assign(S.f,{nt_edit:id,nt_title:n.title,nt_body:n.body,nt_pin:!!n.pinned});window.scrollTo(0,0);render()};
 A.ntCancel=()=>{clearF('nt_');render()};A.ntDel=async({id})=>{if(!await ask('공지를 삭제할까요?','','삭제',true))return;await delDoc('notices',id)};
 // ---- 설정 ----
-function vASettings(){const st=S.settings;const a=me();return `<h1>설정</h1>
+function vASettings(){const st=S.settings;const a=me();return `<h1>설정</h1>${pushCard()}
  <div class="card"><h3>🔑 전용코드 변경</h3><p class="xs muted">보안을 위해 현재 코드는 표시되지 않아요. 바꾸면 즉시 적용되고, 이미 로그인한 사람은 그대로 유지돼요.</p>
  <div class="row nw"><input class="inp" placeholder="새 회원 전용코드" data-f="cd_m" value="${esc(fv('cd_m'))}" autocapitalize="off"><button class="btn pri" data-a="codeSave" data-k="m">변경</button></div>
  <div class="row nw"><input class="inp" placeholder="새 관리자 전용코드" data-f="cd_a" value="${esc(fv('cd_a'))}" autocapitalize="off"><button class="btn pri" data-a="codeSave" data-k="a">변경</button></div>${st.codeAt?`<div class="xs muted">마지막 변경 ${ago(st.codeAt)}</div>`:''}</div>
@@ -292,6 +292,30 @@ function vASettings(){const st=S.settings;const a=me();return `<h1>설정</h1>
  <div class="card"><h3>✨ AI 기능</h3><p class="sm ${S.ai?'ok':'warn'} b">${S.ai?'AI 연결됨 — 루틴·식단·인바디·사진 분석 사용 가능':'AI 키가 아직 연결되지 않았어요'}</p>${S.ai?'':'<p class="xs muted">Supabase 대시보드 → Edge Functions → Secrets에 ANTHROPIC_API_KEY를 추가하면 AI 기능이 켜져요.</p>'}</div>
  <div class="card"><h3>로고</h3><div class="row">${LOGO(60)}<span class="word" style="font-size:34px">Core</span></div><p class="xs muted">Core = 몸의 중심(코어) + 우리 센터의 중심. 'C' 모양의 원판 안에 중심점을 담았어요.</p></div>
  <button class="btn ghost full" data-a="logout">${ic('out',16)} 로그아웃</button>`}
+// ---- 아이폰 알림 (웹 푸시) ----
+const NCATS=[['video','🎬 회원 영상 (업로드·답글)'],['book','📅 예약'],['cancel','✖️ 예약 취소'],['change','🔁 예약 변경'],['rereg','👤 재등록'],['workout','🏋️ 운동 기록·루틴'],['meal','🍽️ 식단 사진·기록'],['inbody','📊 인바디 업로드']];
+const pushSupported=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+async function pushState(){const o={sup:pushSupported(),perm:'Notification' in window?Notification.permission:'unsupported',on:false};try{if(o.sup){const r=await navigator.serviceWorker.getRegistration();const s=r&&await r.pushManager.getSubscription();o.on=!!s}const c=await api('GET','/api/push/count');o.n=c.n}catch(e){}S.push=o;schedule()}
+function pushCard(){if(!S.push){pushState();}const p=S.push||{};const st=S.settings.notify||{};
+ const guide=isIOS()&&!isStandalone()?`<div class="note w">아이폰은 <b>홈 화면에 추가한 Core 앱</b>에서만 알림을 받을 수 있어요 (iOS 16.4 이상).<br>① 사파리 아래 <b>공유</b> 버튼 → <b>홈 화면에 추가</b><br>② 홈 화면의 <b>Core</b> 아이콘으로 열고 로그인<br>③ 설정에서 다시 이 버튼을 눌러주세요</div>`:!p.sup?`<div class="note w">이 브라우저는 알림을 지원하지 않아요. 아이폰은 홈 화면에 추가한 Core 앱에서 켜주세요.</div>`:'';
+ return `<div class="card"><h3>🔔 내 휴대폰으로 회원 소식 알림</h3><p class="xs muted">회원이 예약·취소·변경하거나 운동 기록·식단 사진·영상을 올리면 바로 알려드려요.</p>
+ ${guide}
+ ${p.sup&&(!isIOS()||isStandalone())?(p.on?`<div class="row sb"><span class="sm ok b">✅ 이 기기에서 알림 켜짐</span><button class="btn sm ghost" data-a="pushOff">끄기</button></div><button class="btn soft full" data-a="pushTest" ${dis('ptest')}>${bz('ptest','테스트 알림 보내기')}</button>`
+  :p.perm==='denied'?`<div class="note w">알림이 차단돼 있어요. 아이폰 <b>설정 → 알림 → Core</b>에서 알림 허용을 켠 뒤 다시 눌러주세요.</div><button class="btn grad full" data-a="pushOn" ${dis('pon')}>${bz('pon','이 기기에서 알림 켜기')}</button>`
+  :`<button class="btn grad lg full" data-a="pushOn" ${dis('pon')}>${bz('pon','🔔 이 기기에서 알림 켜기')}</button>`):''}
+ ${p.n?`<p class="xs muted">알림 받는 기기 ${p.n}대</p>`:''}
+ <div class="sec"><h4>받을 알림</h4><div class="list">${NCATS.map(([k,l])=>`<label class="li" style="cursor:pointer"><span class="grow sm">${l}</span><input type="checkbox" data-a="pushCat" data-k="${k}" ${st[k]!==false?'checked':''}></label>`).join('')}</div></div></div>`}
+const b64uToU8=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
+A.pushOn=()=>busy('pon',async()=>{if(!pushSupported())throw new Error('이 브라우저는 알림을 지원하지 않아요.');
+ const perm=await Notification.requestPermission();if(perm!=='granted'){await pushState();throw new Error('알림 허용이 필요해요. 설정 → 알림 → Core에서 허용해주세요.')}
+ const reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;const {key}=await api('GET','/api/push/key');
+ let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uToU8(key)});
+ await api('POST','/api/push/sub',{sub:sub.toJSON(),ua:navigator.userAgent});await pushState();toast('알림을 켰어요! 테스트 알림을 보내볼까요?')});
+A.pushOff=async()=>{try{const r=await navigator.serviceWorker.getRegistration();const s=r&&await r.pushManager.getSubscription();if(s){await api('POST','/api/push/unsub',{endpoint:s.endpoint});await s.unsubscribe()}}catch(e){}await pushState();toast('이 기기 알림을 껐어요')};
+A.pushTest=()=>busy('ptest',async()=>{const r=await api('POST','/api/push/test');toast(`테스트 알림을 보냈어요 (${r.n}대)`)});
+A.pushCat=async({k},el)=>{const cur={...(S.settings.notify||{})};cur[k]=el.checked;try{await act('admin/settings',{notify:cur});toast(el.checked?'알림을 켰어요':'이 알림은 받지 않아요')}catch(e){el.checked=!el.checked;throw e}};
 A.codeSave=async({k})=>{const v=(S.f['cd_'+k]||'').trim();if(v.length<4)return toast('코드는 4자 이상으로 해주세요');await act('admin/codes',{[k==='m'?'member':'admin']:v});delete S.f['cd_'+k];toast(`${k==='m'?'회원':'관리자'} 전용코드를 '${v}'(으)로 바꿨어요`)};
 A.stSave=async()=>{const st=S.settings;await act('admin/settings',{open:fv('st_open',st.open||'06:00'),close:fv('st_close',st.close||'22:00'),slotMin:+fv('st_slot',st.slotMin||60),cancelHours:+fv('st_cancel',st.cancelHours??6),closedDays:DOW.map((_,i)=>i).filter(i=>fv('st_cd'+i,(st.closedDays||[]).includes(i))),autoBlock:!!fv('st_auto',st.autoBlock!==false)});clearF('st_');toast('예약 설정을 저장했어요')};
 A.icsReset=async()=>{if(!await ask('캘린더 주소를 새로 만들까요?','기존에 구독한 캘린더는 더 이상 갱신되지 않아요.','새로 만들기'))return;await act('admin/settings',{resetIcs:true})};
