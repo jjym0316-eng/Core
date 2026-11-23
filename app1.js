@@ -69,11 +69,6 @@ function applyTheme(){let t=ls.get('core_theme');if(!t)t=matchMedia('(prefers-co
 // ---- 새로고침 · 당겨서 새로고침 · 새 버전 알림 ----
 function hardReload(){try{$('#app').style.opacity='.4'}catch(e){}const u=location.pathname+'?r='+Date.now();location.replace(u)}
 A.reload=()=>hardReload();
-(()=>{let y0=null,pull=0,ind=null;const TH=75;
- const mk=()=>{if(!ind){ind=document.createElement('div');ind.className='ptr';ind.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>';document.body.appendChild(ind)}return ind};
- addEventListener('touchstart',e=>{if(S.modal||window.scrollY>0||e.touches.length!==1||isEditing()){y0=null;return}y0=e.touches[0].clientY;pull=0},{passive:true});
- addEventListener('touchmove',e=>{if(y0==null)return;pull=e.touches[0].clientY-y0;if(pull<=0||window.scrollY>0){if(ind)ind.style.opacity=0;return}const d=Math.min(pull,TH*1.6);const el=mk();el.style.opacity=Math.min(1,d/TH);el.style.transform=`translate(-50%,${d*.6}px) rotate(${d*3}deg)`;el.classList.toggle('ready',pull>TH)},{passive:true});
- addEventListener('touchend',()=>{if(y0==null)return;y0=null;if(pull>TH&&window.scrollY<=0){if(ind){ind.classList.add('spin')}hardReload()}else if(ind){ind.style.opacity=0;ind.style.transform='translate(-50%,0)'}pull=0},{passive:true});})();
 async function checkUpdate(){try{const r=await fetch('index.html?u='+Date.now(),{cache:'no-store'});if(!r.ok)return;const t=await r.text();const m=t.match(/CORE_V='([^']+)'/);if(m&&window.CORE_V&&m[1]!==window.CORE_V&&!document.querySelector('.updbar')){const d=document.createElement('div');d.className='updbar';d.innerHTML='<span>✨ 새 버전이 있어요</span><button class="btn sm pri" data-a="reload">업데이트</button>';document.body.appendChild(d)}}catch(e){}}
 setInterval(()=>{if(document.visibilityState==='visible')checkUpdate()},180000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkUpdate()});setTimeout(checkUpdate,5000);
 A.theme=()=>{ls.set('core_theme',S.theme==='dark'?'light':'dark');applyTheme();render()};
