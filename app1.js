@@ -84,7 +84,7 @@ const list=c=>[...C(c).values()];
 let syncing=null;
 async function sync(){if(!S.user)return;if(syncing)return syncing;syncing=(async()=>{try{const r=await api('GET','/api/sync?since='+S.since);for(const d of r.docs){if(d.deleted)C(d.col).delete(d.id);else C(d.col).set(d.id,{...d.data,id:d.id})}S.since=r.now;derive();if(r.docs.length)schedule();if(r.more)setTimeout(()=>sync().catch(()=>{}),50)}finally{syncing=null}})();return syncing}
 function derive(){S.ver++;S.members=Object.fromEntries(list('members').map(m=>[m.id,m]));S.settings=C('settings').get('main')||{};S.bookings=list('bookings').filter(b=>b.date);S.bookingMap=Object.fromEntries(S.bookings.map(b=>[b.id,b]));S.blocks=Object.fromEntries(list('blocks').map(b=>[b.id,b]));
- S.notices=list('notices').sort((a,b)=>(!!b.pinned-!!a.pinned)||(b.createdAt-a.createdAt));S.videos=list('videos').sort((a,b)=>b.createdAt-a.createdAt);S.formvids=list('formvids').sort((a,b)=>(b.lastAt||b.createdAt)-(a.lastAt||a.createdAt));S.exlib=Object.fromEntries(list('exlib').map(x=>[x.id,x]));S.foods=list('foods');S.activity=list('activity').sort((a,b)=>b.at-a.at);if(S.user&&S.members[S.user.id])S.user=S.members[S.user.id]}
+ S.notices=list('notices').sort((a,b)=>(!!b.pinned-!!a.pinned)||(b.createdAt-a.createdAt));S.videos=list('videos').sort((a,b)=>b.createdAt-a.createdAt);S.formvids=list('formvids').sort((a,b)=>(b.lastAt||b.createdAt)-(a.lastAt||a.createdAt));S.exlib=Object.fromEntries(list('exlib').map(x=>[x.id,x]));S.foods=list('foods');S.activity=list('activity').filter(a=>(a.at||0)>Date.now()-7*864e5).sort((a,b)=>b.at-a.at);if(S.user&&S.members[S.user.id])S.user=S.members[S.user.id]}
 function md(mid){const c=S._md[mid];if(c&&c.v===S.ver)return c;const o={v:S.ver,wlogs:list('wlogs').filter(x=>x.memberId===mid).sort((a,b)=>b.date.localeCompare(a.date)),meals:{},inbody:list('inbody').filter(x=>x.memberId===mid).sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.createdAt-a.createdAt),routine:C('routines').get(mid)||null,diet:C('diets').get(mid)||null};list('meals').forEach(m=>{if(m.memberId===mid)o.meals[m.date]=m});S._md[mid]=o;return o}
 const strip=o=>{const r={...(o||{})};delete r.id;delete r.updatedAt;delete r.updatedBy;return r};
 async function put(col,id,data,log){await api('POST','/api/doc',{col,id,data:strip(data),log});await sync();render()}
@@ -369,3 +369,9 @@ A.goHome=()=>{if(S.modal)closeModal();S.tab='home';S.selMember=null;window.scrol
  },{passive:true});
  document.addEventListener('touchend',end,{passive:true});document.addEventListener('touchcancel',end,{passive:true});
 })();
+
+// ---- 공통 쪽수(페이지) ----
+function paged(arr,key,per){const pages=Math.max(1,Math.ceil(arr.length/per));const pg=Math.min(Math.max(1,(S.pg||{})[key]||1),pages);return {items:arr.slice((pg-1)*per,pg*per),pg,pages}}
+function pagerHTML(key,pg,pages,total,per){if(pages<=1)return '';const nums=[];for(let i=1;i<=pages;i++)if(i===1||i===pages||Math.abs(i-pg)<=2)nums.push(i);else if(nums[nums.length-1]!=='…')nums.push('…');
+ return `<div class="pager"><button class="pgb" data-a="pgGo" data-k="${key}" data-v="${pg-1}" ${pg<=1?'disabled':''}>‹</button>${nums.map(n=>n==='…'?'<span class="pgd">…</span>':`<button class="pgb ${n===pg?'on':''}" data-a="pgGo" data-k="${key}" data-v="${n}">${n}</button>`).join('')}<button class="pgb" data-a="pgGo" data-k="${key}" data-v="${pg+1}" ${pg>=pages?'disabled':''}>›</button></div><p class="xs muted" style="text-align:center;margin-top:4px">${total}개 중 ${(pg-1)*per+1}–${Math.min(pg*per,total)}</p>`}
+A.pgGo=({k,v})=>{S.pg={...(S.pg||{}),[k]:+v};render();const el=document.getElementById('pg-'+k);if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'})};
