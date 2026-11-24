@@ -395,7 +395,7 @@ A.wkSave=()=>busy('wks',async()=>{const W=S.wk;const ok=[],bad=[];
 const calS=()=>C('calsync').get('main')||{};
 function calCard(){const c=calS();const on=c.connected;const ago2=c.at?ago(c.at):'';
  return `<div class="card col" id="calcard"><div class="row sb"><h3>📅 캘린더로 자동 예약</h3>${on?`<span class="chip ${c.ok===false?'r':'g'} xs">${c.ok===false?'확인 필요':'연결됨'}</span>`:''}</div>
- <p class="sm muted">평소 쓰는 캘린더에 <b>"PT 홍길동"</b>, <b>"그룹 PT 김명숙/김은서"</b>처럼 적으면 10분 안에 그 회원 예약이 자동으로 잡혀요. 앱에 등록되지 않은 이름은 넣지 않아요.</p>
+ <p class="sm muted">평소 쓰는 캘린더에 <b>"PT 홍길동"</b>, <b>"그룹 PT 김명숙/김은서"</b>처럼 적으면 몇 분 안에 그 회원 예약이 자동으로 잡혀요. 앱에 등록되지 않은 이름은 넣지 않아요.</p>
  ${on?`<div class="sm">연결된 캘린더: <b>${esc(c.hint||'')}</b>${ago2?` · 마지막 확인 ${ago2}`:''}</div>
   ${c.ok===false?`<div class="err">${esc(c.err||'')}</div>`:c.at?`<div class="xs muted">다가오는 PT 일정 ${c.events||0}개 · 새로 예약 ${c.added||0} · 시간 변경 ${c.moved||0} · 앱 미등록 이름 ${c.skipped||0}개 건너뜀</div>`:''}
   ${(c.removed||[]).length?`<div class="note w"><b>캘린더에서 지워진 일정이 있어요</b><br>예약은 그대로 두었어요. 취소할지 정해주세요.</div>${c.removed.map(r=>`<div class="bk"><div class="t num">${r.date.slice(5).replace('-','/')}<br>${r.time}</div><div class="grow sm b">${esc(r.name)}</div><button class="btn sm ghost dng" data-a="calCancel" data-h="${r.hid}" ${dis('cc'+r.hid)}>예약 취소</button><button class="btn sm soft" data-a="calKeep" data-h="${r.hid}">유지</button></div>`).join('')}`:''}
