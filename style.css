@@ -249,3 +249,28 @@ u.term{text-decoration:none;border-bottom:2px dotted var(--pri);font-weight:700}
 @keyframes swl{from{opacity:.3;transform:translateX(28px)}to{opacity:1;transform:none}}
 @keyframes swr{from{opacity:.3;transform:translateX(-28px)}to{opacity:1;transform:none}}
 body{touch-action:pan-y pinch-zoom}.pills,.seg,.wkts,.mo,[style*="overflow-x"]{touch-action:pan-x pan-y}
+.rsplit{margin-left:4px;font-weight:600;color:var(--sub,#6B7090);white-space:nowrap}
+.svc{color:#8B5CFF;font-weight:800}
+[data-theme=dark] .svc{color:#B89BFF}
+.onw .rsplit{color:rgba(255,255,255,.85)}.onw .svc{color:#FFE27A}
+.blg{margin-top:12px}.blg .tbl{margin-top:6px}.hr{height:1px;background:var(--line,rgba(0,0,0,.08));margin:14px 0 4px}
+.mrow{display:flex;align-items:center;gap:12px}
+.mth{flex:none;width:64px;height:64px;border-radius:16px;overflow:hidden;padding:0;border:0;background:var(--card2);display:grid;place-items:center;color:var(--mu);cursor:pointer}
+.mth img{width:100%;height:100%;object-fit:cover;display:block}
+.mthe{border:2px dashed var(--line)}
+.mtt{all:unset;cursor:pointer;font-weight:800;display:inline-flex;align-items:center;gap:4px}
+.mtt0{font-weight:800}
+.mvph{width:100%;max-height:240px;object-fit:cover;border-radius:18px;display:block}
+.mbar{display:flex;height:12px;border-radius:99px;overflow:hidden;background:var(--card2)}
+.mbar i{display:block;height:100%}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.ul{margin:6px 0 0;padding-left:20px;font-size:14px;line-height:1.6}
+.spin.sm{width:12px;height:12px;border-width:2px;vertical-align:-2px}
+.card.flat{box-shadow:none;background:var(--card2)}
+.ibg{margin-top:6px}
+.ibgt{position:relative;height:10px;border-radius:99px;background:var(--card2);margin-bottom:4px}
+.ibgt i{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--mint) 35%,transparent);border-radius:99px}
+.ibgt b{position:absolute;top:-3px;width:16px;height:16px;border-radius:50%;margin-left:-8px;border:3px solid var(--card)}
+.segg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sg{border:2px solid var(--line);border-radius:14px;padding:8px;text-align:center;background:var(--card)}
+.plist{display:flex;flex-direction:column;gap:6px;margin-top:4px}.pit{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:12px;background:var(--card2)}
