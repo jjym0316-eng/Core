@@ -275,3 +275,5 @@ body{touch-action:pan-y pinch-zoom}.pills,.seg,.wkts,.mo,[style*="overflow-x"]{t
 .sg{border:2px solid var(--line);border-radius:14px;padding:8px;text-align:center;background:var(--card)}
 .plist{display:flex;flex-direction:column;gap:6px;margin-top:4px}.pit{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:12px;background:var(--card2)}
 .mftog{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:12px;background:var(--card2);cursor:pointer;font-size:14px}
+.ibez{gap:10px}.ibz{border-radius:14px;padding:12px 14px}.ibz h4{margin:0 0 6px;font-size:16px}.ibz ul{margin:0;padding-left:18px}.ibz li{font-size:15px;line-height:1.55;margin:3px 0}
+.ibz.bad{background:rgba(217,70,106,.10)}.ibz.good{background:rgba(22,163,122,.10)}.ibz.go{background:rgba(79,91,255,.10)}
