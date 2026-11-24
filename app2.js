@@ -233,7 +233,7 @@ JSON: {"date":string|null,"metrics":{"weight":number|null,"muscle":number|null,"
 "segLean":{"rArm":{"kg":number|null,"pct":number|null,"level":string|null},"lArm":{...},"trunk":{...},"rLeg":{...},"lLeg":{...}},"segFat":{"rArm":{...},"lArm":{...},"trunk":{...},"rLeg":{...},"lLeg":{...}},
 "control":{"target":number|null,"weight":number|null,"fat":number|null,"muscle":number|null},
 "type":{"name":string,"why":string},"summary":"핵심 수치를 넣은 2~3문장 종합 평가","concerns":["문제점 3~4개"],"strengths":["좋은 점 2~3개"],"change":[string],
-"exercise":["운동 방향 3~4개"],"diet":["식단 방향 3개"],"lifestyle":["생활습관 2개"],"goals":{"period":"예: 12주","weight":string,"muscle":string,"fatPct":string}}`;
+"exercise":["운동 방향 3~4개"],"diet":["식단 방향 3개"],"lifestyle":["생활습관 2개"]}`;
 async function ibAnalyze(mid,fileId,prevOf){const p=S.members[mid]?.profile||{};if(S.aiLeft&&!S.aiLeft.admin&&S.aiLeft.inbody<=0)throw new Error(`인바디 분석은 한 달에 ${S.aiLeft.inbodyLimit||2}번까지 할 수 있어요. 더 필요하면 트레이너에게 문의해주세요.`);const a=await ai(IB_PROMPT(p,prevOf),{files:[fileId],kind:'inbody'});if(!a||!a.metrics)throw new Error('인바디를 읽지 못했어요. 결과지 전체가 선명하게 나오게 다시 찍어주세요.');a.v=2;return a}
 A.ibUp=(d,files)=>busy('ib'+d.m,async()=>{const mid=d.m;if(S.aiLeft&&!S.aiLeft.admin&&S.aiLeft.inbody<=0)throw new Error(`인바디 분석은 한 달에 ${S.aiLeft.inbodyLimit||2}번까지 할 수 있어요. 더 필요하면 트레이너에게 문의해주세요.`);const f=files[0];const r=await upload(f,2400);const prev=md(mid).inbody[0];
  const a=await ibAnalyze(mid,r.id,prev);
@@ -258,7 +258,6 @@ A.ibOpen=({id,m:mid})=>{openModal(()=>{const x=md(mid).inbody.find(i=>i.id===id)
  ${a.segLean||a.segFat?`<div class="card col">${ibSeg(a.segLean,'부위별 근육량','kg')}${ibSeg(a.segFat,'부위별 체지방량','kg')}</div>`:''}
  ${C.target!=null||C.fat!=null?`<div class="card"><div class="sec"><h4>체중 조절 목표</h4><div class="kv">${C.target!=null?`<div><span>적정 체중</span><b>${esc(C.target)}<small class="xs"> kg</small></b></div>`:''}${C.weight!=null?`<div><span>체중 조절</span><b>${C.weight>0?'+':''}${esc(C.weight)}<small class="xs"> kg</small></b></div>`:''}${C.fat!=null?`<div><span>지방 조절</span><b>${C.fat>0?'+':''}${esc(C.fat)}<small class="xs"> kg</small></b></div>`:''}${C.muscle!=null?`<div><span>근육 조절</span><b>${C.muscle>0?'+':''}${esc(C.muscle)}<small class="xs"> kg</small></b></div>`:''}</div></div></div>`:''}
  ${a.change?.length?`<div class="card"><div class="sec"><h4>📈 지난 측정과 비교</h4>${ul(a.change)}</div></div>`:''}
- ${a.goals?`<div class="card"><div class="sec"><h4>🎯 목표 (${esc(a.goals.period||'')})</h4><div class="kv">${a.goals.weight?`<div><span>체중</span><b class="sm">${esc(a.goals.weight)}</b></div>`:''}${a.goals.muscle?`<div><span>골격근량</span><b class="sm">${esc(a.goals.muscle)}</b></div>`:''}${a.goals.fatPct?`<div><span>체지방률</span><b class="sm">${esc(a.goals.fatPct)}</b></div>`:''}</div></div></div>`:''}
  ${a.v===2?`<button class="btn ghost full" data-a="ibRe" data-id="${x.id}" data-m="${mid}" ${dis('ibr'+x.id)}>${bz('ibr'+x.id,ic('refresh',15)+' 다시 분석','분석 중…')}</button>`:''}
  <p class="xs muted">AI 분석은 참고용이며 의학적 진단이 아니에요.</p><button class="btn ghost dng full" data-a="ibDel" data-id="${x.id}">이 인바디 삭제</button>`})};
 A.ibDel=async({id})=>{if(!await ask('인바디 기록을 삭제할까요?','','삭제',true))return;await delDoc('inbody',id);closeModal()};
