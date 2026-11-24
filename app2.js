@@ -356,7 +356,7 @@ A.stSave=async()=>{const st=S.settings;await act('admin/settings',{open:fv('st_o
 A.icsReset=async()=>{if(!await ask('캘린더 주소를 새로 만들까요?','기존에 구독한 캘린더는 더 이상 갱신되지 않아요.','새로 만들기'))return;await act('admin/settings',{resetIcs:true})};
 
 // ================= 시작 =================
-async function boot(){applyTheme();S.boot=true;render();try{const st=await api('GET','/api/status');S.needSetup=st.setup;S.ai=st.ai;if(!st.setup)await loadMe().catch(()=>{})}catch(e){S.loginMsg=e.message}S.boot=false;render();
+async function boot(){applyTheme();S.boot=true;render();try{const st=await api('GET','/api/status');S.needSetup=st.setup;S.ai=st.ai;if(!st.setup)await loadMe().catch(()=>{})}catch(e){S.loginMsg=e.message}S.boot=false;render();hideSplash();
  setInterval(()=>{if(S.user&&document.visibilityState==='visible')sync().catch(()=>{})},20000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.user)sync().catch(()=>{})});
  const s=ls.get('core_ses');if(s&&S.user&&s.date===today()&&s.mid===S.user.id){S.ses=s;openModal(()=>sesView(),true)}}
 boot();
@@ -411,3 +411,7 @@ A.calOff=async()=>{if(!await ask('캘린더 연결을 끊을까요?','이미 잡
 A.calKeep=async({h})=>{await act('admin/cal',{keep:h});toast('예약을 유지했어요')};
 A.calCancel=({h})=>busy('cc'+h,async()=>{await act('admin/cal',{cancel:h});toast('예약을 취소했어요')});
 A.goCal=()=>{S.tab='settings';render();setTimeout(()=>document.getElementById('calcard')?.scrollIntoView({behavior:'smooth'}),80)};
+
+// ---- 시작 로고 화면 ----
+function hideSplash(){const el=document.getElementById('splash');if(!el||el.dataset.h)return;el.dataset.h=1;const wait=Math.max(0,380-(Date.now()-(window.__t0||0)));setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),260)},wait)}
+setTimeout(hideSplash,7000);
