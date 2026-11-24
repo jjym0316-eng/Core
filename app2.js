@@ -114,18 +114,25 @@ function planHTML(p,label,pk){if(!p)return '';const days=Array.isArray(p.days)?p
 A.pDay=({k,v})=>{S.f['pday_'+k]=v;render();renderModal()};
 function dietPlanView(mid){const D=md(mid).diet||{};if(!D.plan&&!D.aiPlan)return '<div class="card"><p class="empty">아직 식단표가 없어요.<br>트레이너가 식단표를 올리거나, AI 식단 탭에서 만들 수 있어요.</p></div>';
  return `${planHTML(D.plan,'트레이너 식단')}${srcBox(D)}${planHTML(D.aiPlan,'AI 추천 식단')}`}
-function dietPlanAdmin(mid){const D=md(mid).diet||{};return `<div class="card"><h3>식단표 업로드</h3><p class="sm muted">Word(.docx), PDF, 사진·스캔본(JPG·PNG)을 올리면 AI가 아침·점심·저녁·간식, 목표 칼로리, 규칙으로 깔끔하게 정리해서 회원과 함께 볼 수 있어요.</p>
- <label class="btn grad lg full">${S.busy.dietup?'<span class="spin"></span> 문서를 읽고 정리하는 중… (최대 1분)':ic('up',18)+' 파일 선택'}<input type="file" hidden accept=".docx,.pdf,.txt,image/*" data-file="dietUp" data-m="${mid}" ${dis('dietup')}></label></div>
+function dietPlanAdmin(mid){const D=md(mid).diet||{};return `<div class="card"><h3>식단표 업로드</h3><p class="sm muted">Word 파일을 고르거나 Word 앱에서 복사해 붙여넣으면 AI가 아침·점심·저녁·간식, 목표 칼로리, 규칙으로 깔끔하게 정리해서 회원과 함께 볼 수 있어요.</p>
+ ${S.busy.dietup?`<div class="btn grad lg full"><span class="spin"></span> 문서를 읽고 정리하는 중… (최대 1분)</div>`:`<label class="btn grad lg full">${ic('file',18)} Word 파일에서 고르기<input type="file" hidden accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" data-file="dietUp" data-m="${mid}"></label>
+ <button class="btn ghost full" style="margin-top:8px" data-a="dpOpen" data-m="${mid}">📋 Word 앱에서 복사해 붙여넣기</button>
+ ${S.f['dpopen_'+mid]?`<div class="col" style="margin-top:8px"><p class="xs muted">Word 앱에서 식단표 문서를 열고 → 화면을 길게 눌러 <b>모두 선택</b> → <b>복사</b> → 아래 칸을 길게 눌러 <b>붙여넣기</b> 하세요.</p><textarea class="inp" rows="7" placeholder="여기에 붙여넣기" data-f="dpaste_${mid}">${esc(fv('dpaste_'+mid,''))}</textarea><button class="btn pri full" data-a="dietPaste" data-m="${mid}">붙여넣은 내용으로 정리하기</button></div>`:''}
+ <label class="xs muted" style="display:block;text-align:center;margin-top:10px;text-decoration:underline">PDF·사진으로 올리기<input type="file" hidden accept=".pdf,.txt,.docx,image/*" data-file="dietUp" data-m="${mid}"></label>`}</div>
  ${D.plan?`${planHTML(D.plan,'트레이너 식단')}${srcBox(D)}<div class="card"><h3>트레이너 메모 (회원에게 표시)</h3><textarea class="inp" data-f="dmemo_${mid}">${esc(fv('dmemo_'+mid,D.plan.memo||''))}</textarea><div class="row"><button class="btn pri" style="flex:1" data-a="dietMemo" data-m="${mid}">메모 저장</button><button class="btn ghost dng" data-a="dietClear" data-m="${mid}">식단표 삭제</button></div></div>`:''}`}
 A.dietUp=(d,files)=>busy('dietup',async()=>{const f=files[0];const mid=d.m;const n=(f.name||'').toLowerCase();let text='',fileId=null;
  if(n.endsWith('.docx'))text=await docxText(f);else if(n.endsWith('.doc'))throw new Error('구버전 .doc 파일은 Word에서 .docx로 저장 후 올려주세요.');else if(n.endsWith('.txt'))text=await f.text();
  else if(n.endsWith('.pdf')||(f.type||'').startsWith('image/')){fileId=(await upload(f,2200)).id}else throw new Error('Word(.docx), PDF, 이미지, 텍스트 파일만 올릴 수 있어요.');
+ await dietProc(mid,text,fileId,f.name)});
+async function dietProc(mid,text,fileId,fname){
  const plan=await ai(`다음은 트레이너가 회원에게 준 식단 문서${fileId?'(첨부 파일)':''}다. 회원이 휴대폰에서 한눈에 보기 쉽게 정리하라.
 규칙: 문서에 있는 음식·양·시간·규칙만 옮기고 새 음식을 지어내지 마라. 표가 '|'로 나뉘어 있으면 표로 읽어라. 요일·일차별로 식단이 다르면 days에 나눠 담고(label 예: "월요일","1일차"), 매일 같으면 meals만 채워라. 끼니 이름이 다르면 가장 가까운 끼니로(아침/점심/저녁/간식, 운동 전후 식사는 간식). 각 음식의 kcal은 문서에 있으면 그 값(est:false), 없으면 일반적인 1인분 기준으로 추정(est:true). times는 끼니 시간이 문서에 있을 때만. 끼니에 안 맞는 내용(보충제, 물, 주의사항 등)은 sections로. summary는 이 식단의 핵심을 2문장으로. 없는 값은 null 또는 빈 배열. 한국어.
 ${text?`[문서 내용]\n${text.slice(0,30000)}`:''}
 JSON: {"title":string,"summary":string,"kcal":number|null,"carbs":string|null,"protein":string|null,"fat":string|null,"water":string|null,"times":{"breakfast":string|null,"lunch":string|null,"dinner":string|null,"snack":string|null},"meals":{"breakfast":[{"food":string,"amount":string,"note":string,"kcal":number|null,"est":boolean}],"lunch":[],"dinner":[],"snack":[]},"days":[{"label":string,"meals":{"breakfast":[],"lunch":[],"dinner":[],"snack":[]},"note":string}],"sections":[{"title":string,"items":[string]}],"rules":[string],"avoid":[string],"swaps":[string],"tips":[string]}`,{files:fileId?[fileId]:[]});
  if(!plan||(!plan.meals&&!(plan.days||[]).length))throw new Error('식단 내용을 정리하지 못했어요. 더 선명한 파일로 시도해주세요.');const cur=md(mid).diet||{};
- await put('diets',mid,{...cur,memberId:mid,plan:{...plan,memo:cur.plan?.memo||''},source:{name:f.name,fileId,text:text?text.slice(0,20000):''},planAt:Date.now()},logo('diet',`${nm(mid)} 식단표 등록 (${f.name})`));toast('식단표를 정리해서 등록했어요')});
+ await put('diets',mid,{...cur,memberId:mid,plan:{...plan,memo:cur.plan?.memo||''},source:{name:fname,fileId,text:text?text.slice(0,20000):''},planAt:Date.now()},logo('diet',`${nm(mid)} 식단표 등록 (${fname})`));toast('식단표를 정리해서 등록했어요')}
+A.dpOpen=({m})=>{S.f['dpopen_'+m]=!S.f['dpopen_'+m];render()};
+A.dietPaste=({m:mid})=>busy('dietup',async()=>{const t=String(S.f['dpaste_'+mid]||'').trim();if(t.length<10)throw new Error('Word 앱에서 식단표 내용을 복사해 붙여넣어 주세요.');await dietProc(mid,t,null,'Word 붙여넣기');S.f['dpaste_'+mid]='';S.f['dpopen_'+mid]=false});
 A.dietMemo=async({m:mid})=>{const D=md(mid).diet;await put('diets',mid,{...D,plan:{...D.plan,memo:S.f['dmemo_'+mid]??D.plan.memo}});toast('메모를 저장했어요')};
 A.dietClear=async({m:mid})=>{if(!await ask('트레이너 식단표를 삭제할까요?','','삭제',true))return;const D=md(mid).diet;await put('diets',mid,{...D,plan:null,source:null})};
 // ---- 신체 정보 & AI 식단 ----
