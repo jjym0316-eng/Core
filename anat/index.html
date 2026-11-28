@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Core · 3D 인체 해부학</title>
+<style>
+:root{--bg:#0d1020;--card:rgba(22,26,46,.92);--line:rgba(255,255,255,.1);--tx:#eef0fa;--mu:#9aa0c0;--pri:#7380FF;--hot:#ff6b8b;--y:#ffd23f}
+[data-theme=light]{--bg:#eef1f8;--card:rgba(255,255,255,.95);--line:rgba(20,22,43,.1);--tx:#14162b;--mu:#6c7190;--pri:#4F5BFF}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;touch-action:none;-webkit-user-select:none;user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.bar{position:fixed;left:10px;right:10px;display:flex;gap:6px;align-items:center;z-index:5}
+.top{top:calc(env(safe-area-inset-top) + 10px)}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px;font-weight:700;white-space:nowrap;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.pill.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.pill.hot{background:var(--hot);border-color:var(--hot);color:#fff}
+.pill:disabled{opacity:.35}
+.sbox{flex:1;display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:0 12px;backdrop-filter:blur(10px)}
+.sbox input{flex:1;border:0;background:none;color:var(--tx);font:inherit;font-size:14px;padding:9px 0;outline:none;-webkit-user-select:text;user-select:text}
+#res{position:fixed;top:calc(env(safe-area-inset-top) + 54px);left:10px;right:10px;max-height:46vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;z-index:6;display:none;backdrop-filter:blur(10px)}
+#res button{display:block;width:100%;text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);font-size:14px}
+#res small{color:var(--mu);margin-left:6px}
+.side{position:fixed;right:10px;top:calc(env(safe-area-inset-top) + 58px);display:flex;flex-direction:column;gap:6px;z-index:4}
+.side .pill{padding:7px 0;width:46px;text-align:center;font-size:12px}
+.left{position:fixed;left:10px;top:calc(env(safe-area-inset-top) + 58px);display:flex;flex-direction:column;gap:6px;z-index:4}
+.left .pill{font-size:12px;padding:7px 10px}
+.bot{bottom:calc(env(safe-area-inset-bottom) + 10px);flex-direction:column;align-items:stretch}
+.row{display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+.row::-webkit-scrollbar{display:none}
+.peel{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px;backdrop-filter:blur(10px)}
+.peel button{padding:9px 12px;border-radius:12px;font-weight:800;font-size:14px;background:rgba(127,127,160,.15)}
+.peel button.go{background:var(--pri);color:#fff}
+.peel .lv{flex:1;text-align:center;font-size:13px;font-weight:800;line-height:1.2}
+.peel .lv small{display:block;font-size:11px;color:var(--mu);font-weight:600}
+#sheet{position:fixed;left:0;right:0;bottom:0;max-height:62vh;overflow:auto;background:var(--card);border-top:1px solid var(--line);border-radius:22px 22px 0 0;padding:14px 16px calc(env(safe-area-inset-bottom) + 16px);z-index:8;transform:translateY(105%);transition:transform .22s ease;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);touch-action:pan-y}
+#sheet.open{transform:none}
+#sheet h2{margin:0;font-size:19px;letter-spacing:-.02em}
+#sheet .en{color:var(--mu);font-size:12px;margin:2px 0 8px}
+#sheet .tg{display:inline-block;font-size:11px;font-weight:800;border-radius:6px;padding:2px 6px;margin-right:4px;background:rgba(127,127,160,.18)}
+#sheet dl{margin:8px 0 0;display:grid;grid-template-columns:64px 1fr;gap:7px 10px;font-size:14px;line-height:1.5}
+#sheet dt{color:var(--mu);font-weight:800;font-size:12px;padding-top:2px}
+#sheet dd{margin:0}
+#sheet .tip{margin-top:10px;font-size:13px;line-height:1.5;background:rgba(115,128,255,.12);border-radius:12px;padding:9px 11px}
+#sheet .acts{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+#sheet .acts button{flex:1;min-width:84px;padding:10px 6px;border-radius:12px;background:rgba(127,127,160,.16);font-weight:800;font-size:13px}
+#sheet .acts button.on{background:var(--y);color:#222}
+#sheet .x{position:absolute;right:12px;top:10px;width:34px;height:34px;border-radius:50%;background:rgba(127,127,160,.18);font-size:18px}
+#load{position:fixed;inset:0;display:grid;place-items:center;z-index:20;background:var(--bg);text-align:center;font-weight:800}
+#load .b{width:180px;height:6px;border-radius:9px;background:rgba(127,127,160,.25);margin:12px auto 0;overflow:hidden}
+#load .b i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4F5BFF,#FF7A93);transition:width .2s}
+#toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:700;z-index:30;opacity:0;transition:opacity .2s;pointer-events:none;text-align:center}
+#tgt{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 58px);transform:translateX(-50%);z-index:4;font-size:12px;font-weight:800;background:var(--y);color:#222;border-radius:999px;padding:6px 12px;display:none;max-width:60vw;text-align:center}
+#cr{position:fixed;left:62px;right:62px;bottom:calc(env(safe-area-inset-bottom) + 120px);text-align:center;font-size:9px;color:var(--mu);opacity:.7;z-index:3;pointer-events:none}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="load"><div>3D 인체 모델을 불러오는 중…<div class="b"><i id="lb"></i></div><div id="lt" style="font-size:12px;color:var(--mu);margin-top:8px"></div></div></div>
+<div class="bar top"><div class="sbox"><span>🔍</span><input id="q" placeholder="근육·뼈·인대 검색 (예: 광배근, ACL)" enterkeyhint="search" autocomplete="off"></div><button class="pill" id="reset">처음으로</button></div>
+<div id="res"></div>
+<div id="tgt"></div>
+<div class="side"><button class="pill" data-v="front">앞</button><button class="pill" data-v="back">뒤</button><button class="pill" data-v="left">왼쪽</button><button class="pill" data-v="right">오른쪽</button><button class="pill" id="spin">회전</button></div>
+<div class="left"><button class="pill" data-r="all">전신</button><button class="pill" data-r="head">머리·목</button><button class="pill" data-r="upper">상체</button><button class="pill" data-r="arm">팔</button><button class="pill" data-r="lower">하체</button><button class="pill" data-r="foot">발</button></div>
+<div id="cr">3D 모델: Z-Anatomy (CC BY-SA 4.0) · BodyParts3D © DBCLS</div>
+<div class="bar bot">
+ <div class="row" id="sys"><button class="pill on" data-s="muscle">근육</button><button class="pill" data-s="fascia">근막·힘줄</button><button class="pill on" data-s="bone">뼈</button><button class="pill on" data-s="lig">인대·관절</button><button class="pill" id="hmode">👆 터치로 숨기기</button><button class="pill" id="undo">↩ 되돌리기</button><button class="pill" id="showall">숨긴 것 모두 보이기</button></div>
+ <div class="peel"><button id="cover">◀ 덮기</button><div class="lv" id="lv"></div><button id="peel" class="go">벗기기 ▶</button></div>
+</div>
+<div id="sheet"></div>
+<div id="toast"></div>
+<script src="data1.js"></script><script src="data2.js"></script>
+<script type="importmap">{"imports":{"three":"./lib/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from './lib/OrbitControls.js';
+import {MeshoptDecoder} from './lib/meshopt_decoder.mjs';
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const P=new URLSearchParams(location.search);
+document.documentElement.dataset.theme=P.get('theme')==='light'?'light':'dark';
+const M=window.AN_M||{},L=window.AN_L||{},BN=window.AN_B||{},W=window.AN_W||[];
+const toast=t=>{const e=$('#toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,1400)};
+
+// ── 장면 ──
+const cv=$('#c');const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,powerPreference:'high-performance'});
+R.setPixelRatio(Math.min(devicePixelRatio,2));R.setSize(innerWidth,innerHeight);R.outputColorSpace=THREE.SRGBColorSpace;
+const scene=new THREE.Scene();scene.background=new THREE.Color(document.documentElement.dataset.theme==='light'?0xeef1f8:0x0d1020);
+const cam=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,1,2000);
+scene.add(new THREE.HemisphereLight(0xffffff,0x40384a,1.3));
+const key=new THREE.DirectionalLight(0xffffff,1.6);key.position.set(0.4,0.6,1);cam.add(key);
+const rim=new THREE.DirectionalLight(0xbfd0ff,0.5);rim.position.set(-1,0.2,-0.6);cam.add(rim);scene.add(cam);
+const ctl=new OrbitControls(cam,cv);ctl.enableDamping=true;ctl.dampingFactor=0.12;ctl.rotateSpeed=0.8;ctl.zoomSpeed=1.1;ctl.minDistance=12;ctl.maxDistance=520;ctl.screenSpacePanning=true;
+ctl.touches={ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_PAN};
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight)});
+
+// ── 분류·색 ──
+const COL={m1:0xb7423b,m2:0xa83a33,m3:0x99332c,m4:0x8a2c25,fascia:0xd8cdbd,tendon:0xe8dcc6,bone:0xe9dfc8,lig:0xc6d5dd,capsule:0xb4c7d2,disc:0x9cc2de,nucleus:0x6fa6d4,cart:0xa9c8d8,ins:0x19e6a6,sel:0xffc533,tgt:0xff8a3d};
+const base=n=>n.replace(/[lr]$/,'');const sideOf=n=>/[a-z\)]l$/.test(n)?'왼쪽':/[a-z\)]r$/.test(n)?'오른쪽':'';
+function catOf(sys,n){const s=n.toLowerCase();
+ if(sys==='bone')return /cartilage/.test(s)&&!/costal/.test(s)?'cart':'bone';
+ if(sys==='lig'){if(/nucleus/.test(s))return 'nucleus';if(/disc|symphysis/.test(s))return 'disc';if(/capsul/.test(s))return 'capsule';if(/menisc|labrum|cartilage|fat_pad/.test(s))return 'cart';return 'lig'}
+ if(/tendon(?!ous)|calcaneal/.test(s))return 'tendon';
+ if(/fascia|aponeurosis|retinacul|septum|sheath|tract|linea_alba|arch|ligament|ring|trochlea|tarsus|frame/.test(s))return 'fascia';
+ return 'muscle'}
+function ko(it){const b=it.base;if(it.sys==='muscle'&&M[b])return M[b][0];if(L[b])return L[b][0];if(BN[b])return BN[b];
+ let s=b.replace(/[*]/g,'');for(const [e,k] of W)s=s.replace(new RegExp('(^|_)'+e.replace(/[()]/g,'\\$&')+'(?=_|$)','gi'),'$1'+k);
+ return s.replace(/_/g,' ').replace(/\s+/g,' ').trim()}
+
+// ── 불러오기 ──
+const ITEMS=[];const BM={};let total=0,done=0;
+const setP=(t)=>{if(!$('#lb'))return;$('#lb').style.width=Math.round(done/Math.max(total,1)*100)+'%';if(t)$('#lt').textContent=t};
+async function loadSys(sys,file,opt={}){
+ const [meta,bin]=await Promise.all([fetch(`data/${file}.json`).then(r=>r.json()),fetch(`data/${file}.bin`).then(r=>r.arrayBuffer())]);done++;setP();
+ const u8=new Uint8Array(bin);const mn=meta.min,sz=meta.size;
+ let tv=0,ti=0;for(const it of meta.items){tv+=it.v;ti+=it.i}
+ const mat=new THREE.MeshStandardMaterial({roughness:sys==='bone'?0.75:0.55,metalness:0,side:THREE.DoubleSide,...(opt.mat||{})});
+ const bm=new THREE.BatchedMesh(meta.items.length,tv,ti,mat);bm.perObjectFrustumCulled=true;bm.sortObjects=false;if(opt.order)bm.renderOrder=opt.order;
+ for(const it of meta.items){
+  const q=new Uint16Array(it.v*4);MeshoptDecoder.decodeVertexBuffer(new Uint8Array(q.buffer),it.v,8,u8.subarray(it.vo,it.vo+it.vl));
+  const ix=new Uint32Array(it.i);MeshoptDecoder.decodeIndexBuffer(new Uint8Array(ix.buffer),it.i,4,u8.subarray(it.io,it.io+it.il));
+  const p=new Float32Array(it.v*3);for(let k=0;k<it.v;k++){p[k*3]=mn[0]+q[k*4]/65535*sz[0];p[k*3+1]=mn[1]+q[k*4+1]/65535*sz[1];p[k*3+2]=mn[2]+q[k*4+2]/65535*sz[2]}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setIndex(new THREE.BufferAttribute(ix,1));g.computeVertexNormals();g.computeBoundingBox();g.computeBoundingSphere();
+  const gid=bm.addGeometry(g);const inst=bm.addInstance(gid);
+  const b=base(it.n);const o={sys,name:it.n,base:b,side:sideOf(it.n),path:it.p||[],inst,bm,box:g.boundingBox.clone()};
+  o.cat=sys==='ins'?'ins':catOf(sys,it.n);if(sys==='muscle'&&o.cat==='muscle')o.layer=(M[b]?M[b][1]:2)||1;else if(o.cat==='fascia')o.layer=0;else if(o.cat==='tendon')o.layer=1;
+  o.idx=ITEMS.length;ITEMS.push(o);bm['_'+inst]=o}
+ BM[sys]=bm;scene.add(bm);return bm}
+function baseColor(o){if(o.cat==='muscle')return COL['m'+Math.min(4,Math.max(1,o.layer))];return COL[o.cat]||COL.lig}
+
+// ── 상태 ──
+const st={level:+(P.get('level')||1),sys:{muscle:true,fascia:false,bone:true,lig:true},hidden:new Set(),only:null,sel:null,hmode:false,ins:false,undo:[],spin:false,targets:new Set()};
+const LV=['전체(근막 포함)','겉근육','중간층 근육','심부근육','가장 깊은 근육','뼈·인대·관절'];
+const LVd=['근막·힘줄까지 모두','표층 근육이 보여요','표층을 벗겨 중간층','더 깊은 심부근육','척추 주변 최심층','근육을 모두 벗긴 골격'];
+function visible(o){
+ if(st.hidden.has(o.idx))return false;
+ if(st.only&&!st.only.has(o.idx))return o.sys==='bone'||(st.ins&&o.sys==='ins');
+ if(o.sys==='ins')return false;
+ if(o.cat==='fascia')return st.sys.fascia&&st.level===0;
+ if(o.sys==='muscle')return st.sys.muscle&&(o.layer>=st.level||(o.cat==='tendon'&&st.level<=1));
+ if(o.sys==='bone')return st.sys.bone;
+ if(o.sys==='lig')return st.sys.lig;return true}
+const tmpC=new THREE.Color();
+function apply(){for(const o of ITEMS){if(o.sys==='ins')continue;const v=visible(o);o.bm.setVisibleAt(o.inst,v);
+  let c=baseColor(o);if(st.targets.has(o.base))c=COL.tgt;if(st.sel&&st.sel.base===o.base&&st.sel.sys===o.sys&&!st.ins)c=COL.sel;o.bm.setColorAt(o.inst,tmpC.setHex(c))}
+ $('#lv').innerHTML=`${st.level}단계 · ${LV[st.level]}<small>${LVd[st.level]}</small>`;$('#cover').disabled=st.level<=0;$('#peel').disabled=st.level>=5;
+ $$('#sys [data-s]').forEach(b=>b.classList.toggle('on',!!st.sys[b.dataset.s]));$('#hmode').classList.toggle('hot',st.hmode);$('#undo').disabled=!st.undo.length;$('#showall').style.display=st.hidden.size||st.only?'':'none'}
+
+// ── 카메라 ──
+let center=new THREE.Vector3(0,88,0);const tw={on:false};
+function fly(target,dist,dir){const from=cam.position.clone(),t0=ctl.target.clone();const d=dir?dir.clone().normalize():cam.position.clone().sub(ctl.target).normalize();
+ const to=target.clone().add(d.multiplyScalar(dist));const s=performance.now();tw.on=true;
+ (function step(){const k=Math.min(1,(performance.now()-s)/450),e=1-Math.pow(1-k,3);cam.position.lerpVectors(from,to,e);ctl.target.lerpVectors(t0,target,e);if(k<1)requestAnimationFrame(step);else tw.on=false})()}
+let frontSign=1,leftSign=-1;
+const VIEWS={front:[0,0,1],back:[0,0,-1],left:[1,0,0],right:[-1,0,0]};
+const REG={all:[0,88,0,300],head:[0,155,0,70],upper:[0,125,0,130],arm:[-38,110,0,110],lower:[0,48,0,150],foot:[0,8,5,60]};
+$$('[data-v]').forEach(b=>b.onclick=()=>{const v=VIEWS[b.dataset.v];fly(ctl.target.clone(),cam.position.distanceTo(ctl.target),new THREE.Vector3(v[0]*leftSign,v[1],v[2]*frontSign))});
+$$('[data-r]').forEach(b=>b.onclick=()=>{const r=REG[b.dataset.r];fly(new THREE.Vector3(r[0],r[1],r[2]),r[3])});
+$('#spin').onclick=()=>{st.spin=!st.spin;ctl.autoRotate=st.spin;ctl.autoRotateSpeed=2.2;$('#spin').classList.toggle('on',st.spin)};
+
+// ── 선택·정보 ──
+const ray=new THREE.Raycaster();const ptr=new THREE.Vector2();
+function pick(x,y){ptr.set(x/innerWidth*2-1,-(y/innerHeight)*2+1);ray.setFromCamera(ptr,cam);
+ const objs=['muscle','lig','bone'].map(s=>BM[s]).filter(Boolean);const h=ray.intersectObjects(objs,false);
+ for(const x of h){const id=x.batchId??x.instanceId;const o=x.object['_'+id];if(o&&o.bm.getVisibleAt(o.inst))return o}return null}
+let down=null;cv.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,t:Date.now(),n:(down&&Date.now()-down.t<300)?2:1}});
+cv.addEventListener('pointerup',e=>{if(!down)return;const mv=Math.hypot(e.clientX-down.x,e.clientY-down.y);if(mv>8||Date.now()-down.t>500)return;
+ const o=pick(e.clientX,e.clientY);if(!o){if(st.sel&&!st.hmode)select(null);return}
+ if(st.hmode){hide([o.idx]);toast(`${ko(o)} 숨김`);return}select(o)});
+function groupOf(o){return ITEMS.filter(x=>x.sys===o.sys&&x.base===o.base)}
+function hide(ids){st.undo.push({hidden:new Set(st.hidden),only:st.only,level:st.level});ids.forEach(i=>st.hidden.add(i));if(st.sel&&ids.includes(st.sel.idx))closeSheet();apply()}
+function select(o,fly2){st.sel=o;if(!o){closeSheet();apply();return}apply();sheet(o);
+ if(fly2){const b=new THREE.Box3();groupOf(o).forEach(x=>{if(!o.side||x.side===o.side)b.union(x.box)});const c=b.getCenter(new THREE.Vector3());const s=b.getSize(new THREE.Vector3()).length();fly(c,Math.max(70,s*3.4))}}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SYS={muscle:'근육',bone:'뼈',lig:'인대·관절'};const CAT={muscle:'근육',fascia:'근막',tendon:'힘줄',bone:'뼈',cart:'연골',lig:'인대',capsule:'관절주머니',disc:'추간판',nucleus:'속질핵'};
+function sheet(o){const b=o.base;const d=o.sys==='muscle'?M[b]:null;let li=o.sys!=='muscle'?L[b]:(o.cat!=='muscle'?L[b]:null);
+ if(!li&&o.sys==='lig'){if(/^Intervertebral_disc/.test(b))li=[ko(o),L.Intervertebral_disc[1]];else if(/^Nucleus_pulposus/.test(b))li=[ko(o),L.Nucleus_pulposus[1]]}
+ const grp=(o.path[0]||'').replace(/g$/,'').replace(/_/g,' ');
+ const lay=o.sys==='muscle'&&o.cat==='muscle'?['','표층','중간층','심층','최심층'][o.layer]||'':'';
+ let h=`<button class="x" id="sx">×</button><h2>${esc(ko(o))}${o.side?` <span style="font-size:13px;color:var(--mu)">· ${o.side}</span>`:''}</h2><div class="en">${esc(b.replace(/[*()]/g,'').replace(/_/g,' '))}${grp?` · ${esc(grp)}`:''}</div>
+ <span class="tg">${CAT[o.cat]||SYS[o.sys]}</span>${lay?`<span class="tg">${lay}</span>`:''}`;
+ if(d){h+=`<dl>${d[2]?`<dt>기시점</dt><dd>${esc(d[2])}</dd>`:''}${d[3]?`<dt>정지점</dt><dd>${esc(d[3])}</dd>`:''}${d[4]?`<dt>기능</dt><dd>${esc(d[4])}</dd>`:''}${d[5]?`<dt>신경</dt><dd>${esc(d[5])}</dd>`:''}${d[6]?`<dt>대표 운동</dt><dd>${esc(d[6])}</dd>`:''}</dl>${d[7]?`<div class="tip">💡 ${esc(d[7])}</div>`:''}`}
+ else if(li&&li[1])h+=`<p style="font-size:14px;line-height:1.6;margin:10px 0 0">${esc(li[1])}</p>`;
+ else if(o.sys==='muscle'&&o.cat==='muscle')h+=`<p style="font-size:13px;color:var(--mu);margin:10px 0 0">이 근육의 상세 정보는 준비 중이에요.</p>`;
+ const im=o.sys==='muscle'&&INSMAP?(INSMAP[b]||[]):[];
+ h+=`<div class="acts"><button id="a_hide">숨기기</button><button id="a_only">이것만 보기</button>${o.sys==='muscle'?`<button id="a_ins" class="${st.ins?'on':''}" ${im.length?'':'disabled style="opacity:.4"'}>📍 기시·정지점</button>`:''}<button id="a_zoom">확대</button></div>`;
+ const s=$('#sheet');s.innerHTML=h;s.classList.add('open');
+ $('#sx').onclick=()=>select(null);$('#a_hide').onclick=()=>{hide(groupOf(o).filter(x=>!o.side||x.side===o.side).map(x=>x.idx));toast('숨겼어요 · ↩ 되돌리기로 복원')};
+ $('#a_only').onclick=()=>{st.undo.push({hidden:new Set(st.hidden),only:st.only,level:st.level});st.only=new Set(groupOf(o).map(x=>x.idx));apply();select(o,true);toast('뼈와 함께 이 구조만 보여요')};
+ $('#a_zoom').onclick=()=>select(o,true);
+ const ai=$('#a_ins');if(ai)ai.onclick=()=>toggleIns(o)}
+function closeSheet(){$('#sheet').classList.remove('open');if(st.ins)toggleIns(null,true)}
+// 기시·정지점(부착부) 보기
+let INSMAP=null;
+async function toggleIns(o,off){
+ if(off||st.ins){st.ins=false;if(BM.ins)ITEMS.filter(x=>x.sys==='ins').forEach(x=>BM.ins.setVisibleAt(x.inst,false));if(st._insOnly!==undefined){st.only=st._insOnly;delete st._insOnly}apply();if(o&&!off)sheet(o);return}
+ if(!BM.ins){toast('부착부 불러오는 중…');await loadSys('ins','ins',{order:5,mat:{depthTest:false,transparent:true,opacity:.95,emissive:0x0a6b4f}})}
+ const ids=new Set(INSMAP[o.base]||[]);const insItems=ITEMS.filter(x=>x.sys==='ins');insItems.forEach((x,k)=>{const on=ids.has(k)&&(!o.side||x.side===o.side);BM.ins.setVisibleAt(x.inst,on);BM.ins.setColorAt(x.inst,tmpC.setHex(COL.ins))});
+ st.ins=true;st._insOnly=st.only;st.only=new Set(groupOf(o).filter(x=>!o.side||x.side===o.side).map(x=>x.idx));apply();sheet(o);const ub=new THREE.Box3();groupOf(o).filter(x=>!o.side||x.side===o.side).forEach(x=>ub.union(x.box));insItems.forEach((x,k)=>{if(ids.has(k)&&(!o.side||x.side===o.side))ub.union(x.box)});fly(ub.getCenter(new THREE.Vector3()),Math.max(90,ub.getSize(new THREE.Vector3()).length()*2.6));toast('초록색이 뼈에 붙는 자리(기시·정지점)예요')}
+
+// ── 검색 ──
+let IDX=[];function buildIdx(){const seen=new Map();for(const o of ITEMS){if(o.sys==='ins')continue;const k=o.sys+'|'+o.base;if(seen.has(k))continue;seen.set(k,1);IDX.push({o,k:ko(o),e:o.base.replace(/_/g,' ').toLowerCase()})}}
+const norm=s=>s.toLowerCase().replace(/\s+/g,'');
+const ALIAS={'광배근':'넓은등근','대흉근':'큰가슴근','삼각근':'어깨세모근','승모근':'등세모근','이두':'위팔두갈래근','삼두':'위팔세갈래근','대둔근':'큰볼기근','중둔근':'중간볼기근','소둔근':'작은볼기근','햄스트링':'넙다리두갈래근 반힘줄근 반막근','대퇴사두':'넙다리곧은근 가쪽넓은근 안쪽넓은근 중간넓은근','비복근':'장딴지근','복직근':'배곧은근','복사근':'빗근','기립근':'엉덩갈비근 가장긴근 가시근','능형근':'마름근','전거근':'앞톱니근','장요근':'허리근 엉덩근','회전근개':'가시위근 가시아래근 작은원근 어깨밑근','acl':'앞십자인대','pcl':'뒤십자인대','mcl':'안쪽곁인대','lcl':'가쪽곁인대','디스크':'척추사이원판','반월상':'반달','아킬레스':'발꿈치힘줄','족저근막':'발바닥널힘줄'};
+$('#q').addEventListener('input',e=>{const raw=e.target.value.trim();const r=$('#res');if(!raw){r.style.display='none';return}
+ const qs=[norm(raw)];for(const [a,b] of Object.entries(ALIAS))if(norm(raw).includes(norm(a))||norm(a).includes(norm(raw))&&raw.length>=2)b.split(' ').forEach(x=>qs.push(norm(x)));
+ const sc=x=>{const k=norm(x.k);return qs.some(q=>k.startsWith(q))?0:qs.some(q=>k.includes(q))?1:2};const hits=IDX.filter(x=>qs.some(q=>norm(x.k).includes(q)||x.e.replace(/ /g,'').includes(q))).sort((a,b)=>sc(a)-sc(b)).slice(0,40);
+ r.innerHTML=hits.length?hits.map((x,i)=>`<button data-i="${IDX.indexOf(x)}">${esc(x.k)}<small>${SYS[x.o.sys]}</small></button>`).join(''):'<div style="padding:12px 14px;color:var(--mu);font-size:13px">찾는 구조가 없어요</div>';r.style.display='block';
+ r.querySelectorAll('button').forEach(b=>b.onclick=()=>{const x=IDX[+b.dataset.i];r.style.display='none';$('#q').blur();const o=x.o;
+  if(!visible(o)){if(o.sys==='muscle'&&o.layer<st.level)st.level=Math.max(0,o.cat==='fascia'?0:o.layer);if(o.cat==='fascia'){st.sys.fascia=true;st.level=0}st.sys[o.sys==='muscle'&&o.cat!=='fascia'?'muscle':o.cat==='fascia'?'fascia':o.sys]=true;groupOf(o).forEach(g=>st.hidden.delete(g.idx))}
+  if(o.sys!=='muscle'&&st.level<5&&st.sys.muscle){snap();st.level=5;toast('근육을 벗겨서 보여드려요 · ◀ 덮기로 복원')}
+  select(o,true)})});
+$('#q').addEventListener('focus',()=>{if($('#q').value)$('#q').dispatchEvent(new Event('input'))});
+
+// ── 조작 ──
+const snap=()=>st.undo.push({hidden:new Set(st.hidden),only:st.only,level:st.level});
+$('#peel').onclick=()=>{if(st.level<5){snap();st.level++;apply();toast(LV[st.level])}};
+$('#cover').onclick=()=>{if(st.level>0){snap();st.level--;if(st.level===0)st.sys.fascia=true;apply();toast(LV[st.level])}};
+$$('#sys [data-s]').forEach(b=>b.onclick=()=>{const s=b.dataset.s;st.sys[s]=!st.sys[s];if(s==='fascia'&&st.sys.fascia)st.level=0;apply()});
+$('#hmode').onclick=()=>{st.hmode=!st.hmode;apply();toast(st.hmode?'누르는 구조가 사라져요':'숨기기 모드 끔')};
+$('#undo').onclick=()=>{const u=st.undo.pop();if(!u)return;st.hidden=u.hidden;st.only=u.only;st.level=u.level;apply()};
+$('#showall').onclick=()=>{snap();st.hidden.clear();st.only=null;apply()};
+$('#reset').onclick=()=>{st.hidden.clear();st.only=null;st.level=1;st.sys={muscle:true,fascia:false,bone:true,lig:true};st.hmode=false;st.undo=[];select(null);fly(center.clone(),340,new THREE.Vector3(0,0,frontSign))};
+
+// ── 시작 ──
+(async()=>{try{total=4;setP('근육·뼈·인대 데이터');await MeshoptDecoder.ready;
+ await Promise.all([loadSys('muscle','muscles'),loadSys('bone','bones'),loadSys('lig','joints'),fetch('data/insmap.json').then(r=>r.json()).then(j=>{INSMAP=j;done++;setP()})]);
+ // 얼굴 방향 확인: 큰가슴근이 있는 쪽이 앞
+ const pec=ITEMS.find(o=>/pectoralis_major/i.test(o.base)),sp=ITEMS.find(o=>o.base==='Vertebra_T6');if(pec&&sp){const a=pec.box.getCenter(new THREE.Vector3()).z,b=sp.box.getCenter(new THREE.Vector3()).z;frontSign=a>b?1:-1}
+ const hl=ITEMS.find(o=>o.name==='Humerusl');if(hl)leftSign=hl.box.getCenter(new THREE.Vector3()).x>0?1:-1;REG.arm[0]=38*leftSign*-1;
+ const all=new THREE.Box3();ITEMS.forEach(o=>all.union(o.box));all.getCenter(center);REG.all=[center.x,center.y,center.z,340];
+ cam.position.set(center.x,center.y+10,center.z+340*frontSign);ctl.target.copy(center);ctl.update();
+ buildIdx();
+ const f=(P.get('focus')||'').split(',').filter(Boolean);if(f.length){f.forEach(x=>st.targets.add(x));const o=ITEMS.find(x=>st.targets.has(x.base));if(o){const lv=Math.min(...ITEMS.filter(x=>st.targets.has(x.base)&&x.layer).map(x=>x.layer));if(isFinite(lv))st.level=Math.min(st.level,lv);$('#tgt').textContent='🎯 타겟: '+[...new Set(ITEMS.filter(x=>st.targets.has(x.base)).map(ko))].join(', ');$('#tgt').style.display='block';st.sel=null;const tb=new THREE.Box3();ITEMS.filter(x=>st.targets.has(x.base)).forEach(x=>tb.union(x.box));const tc=tb.getCenter(new THREE.Vector3());const fz=tb.getSize(new THREE.Vector3()).length();const bk=ITEMS.some(x=>st.targets.has(x.base)&&/dorsi|trapez|rhomb|glute|hamstr|biceps_femoris|semiten|semimem|gastro|soleus|erector|longiss|iliocost|multifid|infrasp|teres|triceps|deltoid_muscle$/i.test(x.base));cam.position.set(tc.x,tc.y,tc.z+Math.max(170,fz*2.4)*(bk?-frontSign:frontSign));ctl.target.copy(tc);ctl.update()}}
+ apply();$('#load').remove();
+ }catch(e){$('#lt').textContent='불러오지 못했어요: '+e.message;console.error(e)}})();
+(function loop(){requestAnimationFrame(loop);ctl.update();R.render(scene,cam)})();
+</script></body></html>

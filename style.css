@@ -284,3 +284,5 @@ body{touch-action:pan-y pinch-zoom}.pills,.seg,.wkts,.mo,[style*="overflow-x"]{t
 .slt.blk{opacity:.55;background:transparent;text-decoration:line-through}.slt.blk small{text-decoration:none}
 .slt.past{opacity:.35}
 .slt.bm{border-color:#D9466A}.slt.bm.free small{color:#D9466A}
+#anatfr{position:fixed;left:0;right:0;width:100%;border:0;z-index:3;background:#0d1020;display:none}
+body.anaton #view{min-height:0;padding-bottom:0}

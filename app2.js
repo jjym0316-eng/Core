@@ -270,8 +270,8 @@ A.ibOpen=({id,m:mid})=>{openModal(()=>{const x=md(mid).inbody.find(i=>i.id===id)
 A.ibDel=async({id})=>{if(!await ask('인바디 기록을 삭제할까요?','','삭제',true))return;await delDoc('inbody',id);closeModal()};
 
 // ================= 관리자 =================
-function vAdmin(){const nav=[['home','대시보드','home'],['members','회원','users'],['book','예약','cal'],['content','콘텐츠','grid'],['settings','설정','gear']];
- const b={home:vAHome,members:vAMembers,book:vABook,content:vAContent,settings:vASettings}[S.tab]||vAHome;return shell(nav,b())}
+function vAdmin(){const nav=[['home','대시보드','home'],['members','회원','users'],['book','예약','cal'],['content','콘텐츠','grid'],['anat','해부학','body'],['settings','설정','gear']];
+ const b={home:vAHome,members:vAMembers,book:vABook,content:vAContent,anat:vAnat,settings:vASettings}[S.tab]||vAHome;return shell(nav,b())}
 const members=()=>Object.values(S.members).filter(m=>m.role!=='admin');
 const AICON={book:'📅',cancel:'✖️',change:'🔁',done:'✅',noshow:'⚠️',workout:'🏋️',meal:'🍽️',video:'🎬',inbody:'📊',routine:'✨',diet:'🥗',member:'👤'};
 function vAHome(){const ms=members();const act_=ms.filter(m=>mstate(m)==='active');const exp=ms.filter(m=>mstate(m)==='expired');const tb=S.bookings.filter(b=>b.date===today()).sort(byDT);const wk=S.bookings.filter(b=>b.status==='booked'&&b.date>=today()&&b.date<=addDays(today(),7)).length;const nv=S.formvids.filter(v=>v.status!=='reviewed').length;const low=act_.filter(m=>remaining(m)<=2&&(+m.total||0)>0);
@@ -502,3 +502,19 @@ setTimeout(hideSplash,7000);
 function srcBox(D){const sr=D.source||{};if(sr.fileId)return `<a class="btn full" href="${fileUrl(sr.fileId)}" target="_blank" rel="noopener">${ic('file',16)} 원본 파일 보기 (${esc(sr.name||'')})</a>`;if(sr.text)return `<details class="card"><summary class="sm b">${ic('file',14)} 원본 문서 내용 보기 (${esc(sr.name||'')})</summary><div class="sm" style="white-space:pre-wrap;margin-top:8px">${esc(sr.text)}</div></details>`;return ''}
 
 A.mfTog=({k})=>{S.mfOpen={...(S.mfOpen||{}),[k]:!(S.mfOpen||{})[k]};render()};
+
+// ---- 3D 인체 해부학 탭 ----
+const ANMAP={chest:['Clavicular_head_of_pectoralis_major_muscle','Sternocostal_head_of_pectoralis_major_muscle','(Abdominal_part_of_pectoralis_major_muscle)'],delts:['Clavicular_part_of_deltoid_muscle','Acromial_part_of_deltoid_muscle','Scapular_spinal_part_of_deltoid_muscle'],biceps:['Long_head_of_biceps_brachii','Short_head_of_biceps_brachii','Brachialis_muscle'],triceps:['Long_head_of_triceps_brachii','Lateral_head_of_triceps_brachii','Medial_head_of_triceps_brachii'],forearms:['Brachioradialis_muscle','Flexor_carpi_radialis','Extensor_carpi_radialis_longus','Extensor_digitorum','Flexor_digitorum_superficialis'],abs:['Rectus_abdominis_muscle','Transversus_abdominis_muscle'],obliques:['External_abdominal_oblique_muscle','Internal_abdominal_oblique_muscle'],traps:['Descending_part_of_trapezius_muscle','Transverse_part_of_trapezius_muscle','Ascending_part_of_trapezius_muscle','Rhomboid_major_muscle','Rhomboid_minor_muscle'],lats:['Latissimus_dorsi_muscle','Teres_major_muscle'],lowerback:['Iliocostalis_lumborum_muscle','Longissimus_thoracis_muscle','Spinalis_thoracis_muscle','Multifidus_lumborum_muscle'],glutes:['Gluteus_maximus_muscle','Gluteus_medius_muscle','Gluteus_minimus_muscle'],quads:['Rectus_femoris_muscle','Vastus_lateralis_muscle','Vastus_medialis_muscle','Vastus_intermedius_muscle'],hamstrings:['Long_head_of_biceps_femoris','Short_head_of_biceps_femoris','Semitendinosus_muscle','Semimembranosus_muscle'],adductors:['Adductor_longus','Adductor_brevis','Adductor_magnus','Gracilis_muscle','Pectineus_muscle'],calves:['Lateral_head_of_gastrocnemius','Medial_head_of_gastrocnemius','Soleus_muscle']};
+function anatFocus(keys){return [...new Set((keys||[]).flatMap(k=>ANMAP[k]||[]))].join(',')}
+A.anatGo=({f})=>{S.anatFocus=f||'';S.anatKey=null;closeModal();S.tab='anat';window.scrollTo(0,0);render()};
+function vAnat(){return `<div id="anatph"></div>`}
+function syncAnat(){let fr=document.getElementById('anatfr');const on=!!S.user&&S.tab==='anat'&&!S.boot;
+ if(!on){if(fr)fr.style.display='none';document.body.classList.remove('anaton');return}
+ const th=document.documentElement.dataset.theme==='light'?'light':'dark';const key=th+'|'+(S.anatFocus||'');
+ if(!fr){fr=document.createElement('iframe');fr.id='anatfr';fr.title='3D 인체 해부학';fr.setAttribute('allow','fullscreen');document.body.appendChild(fr)}
+ if(S.anatKey!==key){S.anatKey=key;fr.src=`anat/?theme=${th}${S.anatFocus?'&focus='+encodeURIComponent(S.anatFocus):''}&v=${window.CORE_V||''}`}
+ document.body.classList.add('anaton');fr.style.display='block';
+ const hd=document.querySelector('header.top'),nv=document.querySelector('nav.bot');const t=hd?hd.getBoundingClientRect().bottom:0;const b=nv?nv.getBoundingClientRect().top:innerHeight;
+ fr.style.top=t+'px';fr.style.height=Math.max(200,b-t)+'px'}
+{const _r1=render;render=function(){_r1();syncAnat()}}
+addEventListener('resize',()=>syncAnat());
